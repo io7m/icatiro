@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Schemas xmlns="urn:com.io7m.trasco.database.statements:1:0">
+  <Schema versionCurrent="0">
+    <Comment>
+      The icatiro role is a least-privilege role that can perform only those operations required to run the system and
+      no others.
+    </Comment>
+
+    <Statement><![CDATA[
+create role icatiro with nosuperuser nocreatedb nocreaterole noinherit nologin;
+]]></Statement>
+
+    <Comment>
+      The icatiro_none role is a no-privilege role that cannot perform any actions.
+    </Comment>
+
+    <Statement><![CDATA[
+create role icatiro_none with nosuperuser nocreatedb nocreaterole noinherit nologin;
+]]></Statement>
+
+    <Comment>
+      The schema version table stores the current version of the database schema. Implementations are expected to query
+      this table on connecting to the database in order to ensure that the calling code is compatible with the tables in
+      the database.
+    </Comment>
+
+    <Statement><![CDATA[
+create table schema_version (
+  version_lock   char(1) not null default 'x',
+  version_number bigint  not null,
+
+  constraint check_lock_primary primary key (version_lock),
+  constraint check_lock_locked check (version_lock = 'x')
+)
+]]></Statement>
+  </Schema>
+
+  <Schema versionCurrent="1">
+    <Comment>
+      The users table stores the current set of users.
+    </Comment>
+
+    <Statement><![CDATA[
+create table users (
+  id               uuid                     not null primary key,
+  name             varchar(1000000)         not null unique,
+  email            varchar(1000000)         not null unique,
+  created          timestamp with time zone not null,
+  last_login_time  timestamp with time zone not null,
+  password_algo    varchar(1000000)         not null,
+  password_hash    varchar(1000000)         not null,
+  password_salt    varchar(1000000)         not null
+)
+]]></Statement>
+
+    <Statement>grant select, insert, update on users to icatiro</Statement>
+    <Statement>grant select (id) on users to icatiro_none</Statement>
+
+    <Comment>
+      The audit table stores a list of auditable events. Who did it? What did they do? When did they do it?
+    </Comment>
+
+    <Statement><![CDATA[
+create table audit (
+  id             bigint                   not null primary key generated always as identity,
+  user_id        uuid                     not null,
+  time           timestamp with time zone not null,
+  type           varchar(1000000)         not null,
+  message        varchar(1000000)         not null,
+  confidential   boolean                  not null,
+
+  foreign key (user_id) references users (id)
+)
+]]></Statement>
+
+    <Statement>grant insert, select on audit to icatiro</Statement>
+
+    <Comment>
+      The projects table stores the set of projects.
+    </Comment>
+
+    <Statement><![CDATA[
+create table projects (
+  id            bigint             not null primary key generated always as identity,
+  name_display  varchar(1000000)   not null unique,
+  name_short    varchar(16)        not null unique
+)
+]]></Statement>
+
+    <Statement>grant insert, select on projects to icatiro</Statement>
+
+    <Comment>
+      The projects table stores the set of tickets.
+    </Comment>
+
+    <Statement><![CDATA[
+create table tickets (
+  id             bigint                    not null primary key generated always as identity,
+  project        bigint                    not null,
+  title          varchar(1000000)          not null,
+  reporter       uuid                      not null,
+  time_created   timestamp with time zone  not null,
+  time_updated   timestamp with time zone  not null,
+
+  foreign key (project)  references projects (id),
+  foreign key (reporter) references users (id)
+)
+]]></Statement>
+
+    <Statement>grant insert, select on tickets to icatiro</Statement>
+    <Statement>grant update (title) on tickets to icatiro</Statement>
+    <Statement>grant update (time_updated) on tickets to icatiro</Statement>
+
+    <Comment>
+      The permissions table stores the set of permissions held by a user. If scope_project is non-null, then the
+      permission applies to all objects within a project. If scope_ticket is non-null, then the permission applies to
+      the specified ticket. If scope_project and scope_ticket are both null, then the permission applies globally. It is
+      an error for both values to be non-null. The permission values are integer enumeration values specified in
+      com.io7m.icatiro.model.IcPermission.
+    </Comment>
+
+    <Statement><![CDATA[
+create table permissions (
+  user_id        uuid    not null,
+  scope_project  bigint,
+  scope_ticket   bigint,
+  permission     integer not null,
+
+  constraint scope_project_or_ticket check (
+    case when scope_project is not null then
+      (scope_ticket is null)
+    end
+  ),
+
+  unique (user_id, scope_project, scope_ticket, permission),
+
+  foreign key (user_id)       references users (id),
+  foreign key (scope_project) references projects (id),
+  foreign key (scope_ticket)  references tickets (id)
+)
+]]></Statement>
+
+    <Statement>grant insert, select, delete on permissions to icatiro</Statement>
+
+    <Statement><![CDATA[
+create function permission_is_allowed_globally (
+  user_id    uuid,
+  permission integer
+) returns boolean
+  language sql
+  stable
+  strict
+  return exists (
+    select p.permission from permissions p
+      where p.user_id = user_id
+        and p.permission = permission
+        and p.scope_project is null
+        and p.scope_ticket is null
+  );
+]]></Statement>
+
+    <Statement><![CDATA[
+create function permission_is_allowed_projectwide (
+  user_id    uuid,
+  project    bigint,
+  permission integer
+) returns boolean
+  language sql
+  stable
+  strict
+  return exists (
+    select p.permission from permissions p
+      where p.user_id = user_id
+        and p.permission = permission
+        and p.scope_project = project
+  );
+]]></Statement>
+
+    <Statement><![CDATA[
+create function permission_is_allowed_ticketwide (
+  user_id    uuid,
+  ticket     bigint,
+  permission integer
+) returns boolean
+  language sql
+  stable
+  strict
+  return exists (
+    select p.permission from permissions p
+      where p.user_id = user_id
+        and p.permission = permission
+        and p.scope_ticket = ticket
+  );
+]]></Statement>
+
+    <Statement><![CDATA[
+create function permission_is_allowed (
+  user_id    uuid,
+  project    bigint,
+  ticket     bigint,
+  permission integer
+) returns boolean
+  language sql
+  stable
+  strict
+  return (
+    select permission_is_allowed_globally (user_id, permission)
+      or permission_is_allowed_projectwide (user_id, project, permission)
+      or permission_is_allowed_ticketwide (user_id, ticket, permission)
+  )
+]]></Statement>
+  </Schema>
+
+</Schemas>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<configuration xmlns="http://ch.qos.logback/xml/ns/logback"
+               debug="false">
+
+  <variable name="ICATIRO_LOG_DIRECTORY"
+            value="${icatiro.requestLogDirectory:-.}"/>
+
+  <appender name="STDERR"
+            class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+      <layout class="com.io7m.icatiro.server.logging.IcLoggingPatternLayout"/>
+    </encoder>
+    <target>System.err</target>
+  </appender>
+
+  <appender name="API_V1_REQUEST_LOG"
+            class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+      <layout class="com.io7m.icatiro.server.logging.IcLoggingHTTPRequestLayout"/>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${ICATIRO_LOG_DIRECTORY}/api_v1_%d.log</fileNamePattern>
+    </rollingPolicy>
+  </appender>
+
+  <appender name="VIEW_REQUEST_LOG"
+            class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+      <layout class="com.io7m.icatiro.server.logging.IcLoggingHTTPRequestLayout"/>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${ICATIRO_LOG_DIRECTORY}/view_%d.log</fileNamePattern>
+    </rollingPolicy>
+  </appender>
+
+  <logger name="com.io7m.icatiro.server.requestLog.api_v1"
+          level="TRACE"
+          additivity="false">
+    <appender-ref ref="API_V1_REQUEST_LOG"/>
+  </logger>
+
+  <logger name="com.io7m.icatiro.server.requestLog.view"
+          level="TRACE"
+          additivity="false">
+    <appender-ref ref="VIEW_REQUEST_LOG"/>
+  </logger>
+
+  <logger name="org.eclipse.jetty.server.Server"
+          level="ERROR"/>
+  <logger name="org.eclipse.jetty.server.handler.ContextHandler"
+          level="ERROR"/>
+  <logger name="org.eclipse.jetty.util.ssl.SslContextFactory"
+          level="ERROR"/>
+  <logger name="org.eclipse.jetty.server.AbstractConnector"
+          level="ERROR"/>
+  <logger name="org.eclipse.jetty" level="INFO"/>
+
+  <logger name="com.github.dockerjava"
+          level="ERROR"/>
+  <logger name="org.testcontainers"
+          level="ERROR"/>
+  <logger name="com.zaxxer.hikari"
+          level="INFO"/>
+  <logger name="com.io7m.blackthorne"
+          level="INFO"/>
+
+  <root level="TRACE">
+    <appender-ref ref="STDERR"/>
+  </root>
+
+</configuration>

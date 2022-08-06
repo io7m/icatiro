@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8"/>
+  <link rel="stylesheet" type="text/css" href="/resource/reset.css"/>
+  <link rel="stylesheet" type="text/css" href="/resource/style.css"/>
+  <title>${pageTitle}</title>
+</head>
+<body>
+
+<div id="ic_main">
+  <div id="ic_header">
+    <span class="ic_logo">
+      <img src="/resource/icatiro.svg" width="16" height="16" class="ic_header_logo ic_logo"/> icatiro
+    </span>
+    <span class="ic_empty"/>
+    <span class="ic_profile_links">
+      <a href="/logout">Log out</a>
+    </span>
+  </div>
+
+  <div id="ic_content">
+    <table class="ic_tickets">
+      <thead>
+        <tr>
+          <th class="ic_ticket_id">ID</th>
+          <th class="ic_ticket_title">Title</th>
+          <th class="ic_ticket_time_created">Created</th>
+          <th class="ic_ticket_time_updated">Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        [#list tickets as ticket]
+        <tr>
+          <td class="ic_ticket_id"><a href="/ticket/${ticket.ticketId()}">${ticket.ticketShortName()}</a></td>
+          <td class="ic_ticket_title"><a href="/ticket/${ticket.ticketId()}">${ticket.ticketTitle().value()}</a></td>
+          <td class="ic_ticket_time_created">${ticket.timeCreated()}</td>
+          <td class="ic_ticket_time_updated">${ticket.timeUpdated()}</td>
+        </tr>
+        [/#list]
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

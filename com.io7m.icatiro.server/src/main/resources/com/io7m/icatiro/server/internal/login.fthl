@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8"/>
+  <link rel="stylesheet" type="text/css" href="/resource/reset.css"/>
+  <link rel="stylesheet" type="text/css" href="/resource/style.css"/>
+  <title>${pageTitle}</title>
+</head>
+<body>
+
+<div id="ic_main">
+  <div id="ic_header">
+    <span class="ic_logo">
+      <img src="/resource/icatiro.svg" width="16" height="16" class="ic_header_logo ic_logo"/> icatiro
+    </span>
+  </div>
+
+  <div id="ic_content">
+    <div class="ic_login_form">
+      <h1>${title}</h1>
+      [#if errorMessage??]<p class="ic_login_error_message">${errorMessage}</p>[/#if]
+      <div>
+        <form class="ic_login" action="/login" method="post">
+          <label for="user" class="ic_login_username_label">Username</label>
+          <input type="text" name="username" class="ic_login_username"/>
+          <label for="password" class="ic_login_password_label">Password</label>
+          <input type="password" name="password" class="ic_login_password"/>
+          <input type="submit" value="Log In" class="ic_login_submit"/>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

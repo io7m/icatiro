@@ -1,0 +1,14 @@
+com.io7m.icatiro.tests.arbitraries.IcArbAuditEventProvider
+com.io7m.icatiro.tests.arbitraries.IcArbHashProvider
+com.io7m.icatiro.tests.arbitraries.IcArbIcVMessagesProvider
+com.io7m.icatiro.tests.arbitraries.IcArbIcVProtocolSupportedProvider
+com.io7m.icatiro.tests.arbitraries.IcArbOffsetDateTimeProvider
+com.io7m.icatiro.tests.arbitraries.IcArbPasswordProvider
+com.io7m.icatiro.tests.arbitraries.IcArbSubsetMatchProvider
+com.io7m.icatiro.tests.arbitraries.IcArbTokenProvider
+com.io7m.icatiro.tests.arbitraries.IcArbURIProvider
+com.io7m.icatiro.tests.arbitraries.IcArbUUIDProvider
+com.io7m.icatiro.tests.arbitraries.IcArbUserDisplayNameProvider
+com.io7m.icatiro.tests.arbitraries.IcArbUserEmailProvider
+com.io7m.icatiro.tests.arbitraries.IcArbUserProvider
+com.io7m.icatiro.tests.arbitraries.IcArbUserSummaryProvider
