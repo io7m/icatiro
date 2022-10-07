@@ -15,7 +15,7 @@
   <artifactId>com.io7m.icatiro.server.api</artifactId>
 
   <name>com.io7m.icatiro.server.api</name>
-  <description>Minimalist issue tracker (Server API)</description>
+  <description>Help desk (Server API)</description>
   <url>https://www.io7m.com/software/icatiro</url>
 
   <dependencies>

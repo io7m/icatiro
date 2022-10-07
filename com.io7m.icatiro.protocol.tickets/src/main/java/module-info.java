@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Server protocol v1)
+ * Help desk (Server protocol v1)
  */
 
 module com.io7m.icatiro.protocol.tickets

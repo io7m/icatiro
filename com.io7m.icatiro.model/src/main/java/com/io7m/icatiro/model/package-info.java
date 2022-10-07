@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Model)
+ * Help desk (Model)
  */
 
 @Export

@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Tickets Protocol [Cedarbridge encoding])
+ * Help desk (Tickets Protocol [Cedarbridge encoding])
  */
 
 module com.io7m.icatiro.protocol.tickets.cb

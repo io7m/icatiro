@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker [logging internals]
+ * Help desk [logging internals]
  */
 
 @Version("1.0.0")

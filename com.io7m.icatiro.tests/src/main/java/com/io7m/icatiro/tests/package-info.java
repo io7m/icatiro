@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Test suite)
+ * Help desk (Test suite)
  */
 
 package com.io7m.icatiro.tests;

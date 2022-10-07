@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Tickets Protocol [Cedarbridge encoding])
+ * Help desk (Tickets Protocol [Cedarbridge encoding])
  */
 
 @Export

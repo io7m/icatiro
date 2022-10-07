@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Client implementation)
+ * Help desk (Client implementation)
  */
 
 module com.io7m.icatiro.client

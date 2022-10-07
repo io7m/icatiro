@@ -18,7 +18,7 @@ import com.io7m.icatiro.database.api.IcDatabaseFactoryType;
 import com.io7m.icatiro.database.postgres.IcDatabases;
 
 /**
- * Minimalist issue tracker (Server database Postgresql implementation)
+ * Help desk (Server database Postgresql implementation)
  */
 
 module com.io7m.icatiro.database.postgres

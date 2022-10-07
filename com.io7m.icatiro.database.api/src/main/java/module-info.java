@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Server database API)
+ * Help desk (Server database API)
  */
 
 module com.io7m.icatiro.database.api

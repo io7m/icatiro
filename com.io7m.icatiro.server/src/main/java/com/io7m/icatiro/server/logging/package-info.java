@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker [logging internals]
+ * Help desk [logging internals]
  */
 
 @Export

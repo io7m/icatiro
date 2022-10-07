@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Server database Postgresql implementation
+ * Help desk (Server database Postgresql implementation
  * [internals])
  */
 

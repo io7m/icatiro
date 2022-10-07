@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Arbitrary instances)
+ * Help desk (Arbitrary instances)
  */
 
 @Export

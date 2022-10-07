@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (error codes).
+ * Help desk (error codes).
  */
 
 @Export

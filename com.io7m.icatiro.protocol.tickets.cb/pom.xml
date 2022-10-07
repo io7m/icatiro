@@ -15,7 +15,7 @@
   <artifactId>com.io7m.icatiro.protocol.tickets.cb</artifactId>
 
   <name>com.io7m.icatiro.protocol.tickets.cb</name>
-  <description>Minimalist issue tracker (Tickets Protocol [Cedarbridge encoding])</description>
+  <description>Help desk (Tickets Protocol [Cedarbridge encoding])</description>
   <url>https://www.io7m.com/software/icatiro</url>
 
   <dependencies>

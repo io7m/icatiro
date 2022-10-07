@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Protocol base types)
+ * Help desk (Protocol base types)
  */
 
 @Export

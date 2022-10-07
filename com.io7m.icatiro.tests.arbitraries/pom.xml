@@ -15,7 +15,7 @@
 
   <packaging>jar</packaging>
   <name>com.io7m.icatiro.tests.arbitraries</name>
-  <description>Minimalist issue tracker (Arbitrary instances)</description>
+  <description>Help desk (Arbitrary instances)</description>
   <url>https://www.io7m.com/software/icatiro</url>
 
   <dependencies>

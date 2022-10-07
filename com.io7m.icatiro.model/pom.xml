@@ -15,7 +15,7 @@
   <artifactId>com.io7m.icatiro.model</artifactId>
 
   <name>com.io7m.icatiro.model</name>
-  <description>Minimalist issue tracker (Model)</description>
+  <description>Help desk (Model)</description>
   <url>https://www.io7m.com/software/icatiro</url>
 
   <dependencies>

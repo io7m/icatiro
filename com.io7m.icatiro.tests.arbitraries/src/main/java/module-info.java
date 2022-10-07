@@ -39,7 +39,7 @@ import com.io7m.icatiro.tests.arbitraries.IcArbUserProvider;
 import net.jqwik.api.providers.ArbitraryProvider;
 
 /**
- * Minimalist issue tracker (Arbitrary instances)
+ * Help desk (Arbitrary instances)
  */
 
 module com.io7m.icatiro.tests.arbitraries

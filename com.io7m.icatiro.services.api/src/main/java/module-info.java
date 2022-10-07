@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Services API)
+ * Help desk (Services API)
  */
 
 module com.io7m.icatiro.services.api

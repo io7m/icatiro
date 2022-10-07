@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (error codes).
+ * Help desk (error codes).
  */
 
 module com.io7m.icatiro.error_codes

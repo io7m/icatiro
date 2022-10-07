@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Client implementation [internals])
+ * Help desk (Client implementation [internals])
  */
 
 @Export

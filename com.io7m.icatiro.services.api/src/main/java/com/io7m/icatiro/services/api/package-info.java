@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (GUI Services API)
+ * Help desk (GUI Services API)
  */
 
 @Export

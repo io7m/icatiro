@@ -15,7 +15,7 @@
  */
 
 /**
- * Minimalist issue tracker (Model)
+ * Help desk (Model)
  */
 
 module com.io7m.icatiro.model
