@@ -63,15 +63,15 @@ public enum IcPermission
   public static IcPermission ofInteger(
     final int x)
   {
-    return switch (x) {
-      case 1 -> TICKET_READ;
-      case 2 -> PROJECT_CREATE;
-      case 3 -> TICKET_CREATE;
-      case 4 -> TICKET_WRITE;
-      default -> throw new IllegalArgumentException(
-        "Unrecognized permission integer: %d".formatted(x)
-      );
-    };
+    for (final var value : values()) {
+      if (value.value == x) {
+        return value;
+      }
+    }
+
+    throw new IllegalArgumentException(
+      "Unrecognized permission integer: %d".formatted(x)
+    );
   }
 
   /**
