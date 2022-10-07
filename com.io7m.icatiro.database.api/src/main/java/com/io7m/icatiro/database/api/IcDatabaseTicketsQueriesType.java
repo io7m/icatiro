@@ -73,4 +73,23 @@ public non-sealed interface IcDatabaseTicketsQueriesType
     Optional<List<Object>> seek)
     throws IcDatabaseException;
 
+  /**
+   * Count tickets observable by the given user according to their permissions.
+   *
+   * @param user             The user
+   * @param timeCreatedRange Only tickets created within this time range will be
+   *                         included
+   * @param timeUpdatedRange Only tickets updated within this time range will be
+   *                         included
+   *
+   * @return The ticket count
+   *
+   * @throws IcDatabaseException On errors
+   */
+
+  long ticketListCountWithPermissions(
+    UUID user,
+    IcTimeRange timeCreatedRange,
+    IcTimeRange timeUpdatedRange)
+    throws IcDatabaseException;
 }

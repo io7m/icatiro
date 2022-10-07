@@ -25,9 +25,12 @@ module com.io7m.icatiro.client
 
   requires transitive com.io7m.icatiro.model;
   requires transitive com.io7m.icatiro.client.api;
+  requires com.io7m.icatiro.protocol.tickets.cb;
+  requires com.io7m.icatiro.protocol.tickets;
 
-  requires com.io7m.icatiro.protocol.versions;
-  requires com.io7m.icatiro.protocol.api_v1;
+  requires com.io7m.verdant.core;
+  requires com.io7m.verdant.core.cb;
+  requires com.io7m.genevan.core;
 
   requires com.io7m.jxtrand.vanilla;
   requires java.net.http;

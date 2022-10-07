@@ -18,6 +18,8 @@ package com.io7m.icatiro.server.api;
 
 import com.io7m.icatiro.database.api.IcDatabaseType;
 
+import java.util.UUID;
+
 /**
  * A server instance.
  */
@@ -39,8 +41,29 @@ public interface IcServerType extends AutoCloseable
 
   IcDatabaseType database();
 
-
   @Override
   void close()
+    throws IcServerException;
+
+  /**
+   * Set the given user as the initial user.
+   *
+   * @param userId The user ID
+   *
+   * @throws IcServerException On errors
+   */
+
+  void userInitialSet(UUID userId)
+    throws IcServerException;
+
+  /**
+   * Unset the given user as the initial user.
+   *
+   * @param userId The user ID
+   *
+   * @throws IcServerException On errors
+   */
+
+  void userInitialUnset(UUID userId)
     throws IcServerException;
 }

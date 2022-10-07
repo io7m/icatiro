@@ -20,9 +20,11 @@ package com.io7m.icatiro.server.internal.freemarker;
 import com.io7m.icatiro.services.api.IcServiceType;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
+import freemarker.template.TemplateException;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.util.Objects;
 
 import static freemarker.template.Configuration.SQUARE_BRACKET_TAG_SYNTAX;
@@ -62,7 +64,7 @@ public final class IcFMTemplateService implements IcServiceType
 
   public IcFMTemplateType<IcFMLoginData> loginTemplate()
   {
-    return new IcFMLoginTemplate(this.findTemplate("login"));
+    return new IcGenericTemplate<>(this.findTemplate("pageLogin"));
   }
 
   /**
@@ -71,7 +73,7 @@ public final class IcFMTemplateService implements IcServiceType
 
   public IcFMTemplateType<IcFMTicketListData> ticketListTemplate()
   {
-    return new IcFMTicketListTemplate(this.findTemplate("ticketList"));
+    return new IcGenericTemplate<>(this.findTemplate("pageTicketList"));
   }
 
   private Template findTemplate(
@@ -85,9 +87,59 @@ public final class IcFMTemplateService implements IcServiceType
     }
   }
 
+  /**
+   * @return The main CSS template
+   */
+
+  public IcFMTemplateType<IcFMCSSData> cssTemplate()
+  {
+    return new IcGenericTemplate<>(
+      this.findTemplate("mainCss")
+    );
+  }
+
   @Override
   public String description()
   {
     return "Freemarker template service.";
+  }
+
+  /**
+   * @return The message page template
+   */
+
+  public IcFMTemplateType<IcFMMessageData> pageMessage()
+  {
+    return new IcGenericTemplate<>(
+      this.findTemplate("pageMessage")
+    );
+  }
+
+  private static final class IcGenericTemplate<T extends IcFMDataModelType>
+    implements IcFMTemplateType<T>
+  {
+    private final Template template;
+
+    IcGenericTemplate(
+      final Template inTemplate)
+    {
+      this.template = Objects.requireNonNull(inTemplate, "template");
+    }
+
+    @Override
+    public void process(
+      final T value,
+      final Writer output)
+      throws TemplateException, IOException
+    {
+      this.template.process(value.toTemplateHash(), output);
+    }
+  }
+
+  @Override
+  public String toString()
+  {
+    return "[IcFMTemplateService 0x%s]"
+      .formatted(Long.toUnsignedString(this.hashCode(), 16));
   }
 }

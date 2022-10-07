@@ -17,7 +17,9 @@
 package com.io7m.icatiro.client.internal;
 
 import com.io7m.icatiro.client.api.IcClientException;
-import com.io7m.icatiro.client.api.IcClientUsersType;
+import com.io7m.icatiro.client.api.IcClientPermissionsType;
+import com.io7m.icatiro.client.api.IcClientProjectsType;
+import com.io7m.icatiro.client.api.IcClientTicketsType;
 
 import java.net.URI;
 
@@ -26,7 +28,7 @@ import java.net.URI;
  */
 
 public interface IcClientProtocolHandlerType
-  extends IcClientUsersType
+  extends IcClientTicketsType, IcClientProjectsType, IcClientPermissionsType
 {
   /**
    * Attempt to log in.
@@ -37,11 +39,11 @@ public interface IcClientProtocolHandlerType
    *
    * @return A new protocol handler
    *
-   * @throws IcClientException   On errors
+   * @throws IcClientException    On errors
    * @throws InterruptedException On interruption
    */
 
-  IcClientProtocolHandlerType login(
+  IcNewHandler login(
     String user,
     String password,
     URI base)

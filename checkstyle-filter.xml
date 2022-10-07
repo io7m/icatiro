@@ -15,9 +15,9 @@
   <!-- Secondary record constructors require parameter name shadowing. -->
   <suppress files="IcAuditEvent\.java"
             checks="HiddenField"/>
-
-  <!-- Secondary record constructors require parameter name shadowing. -->
   <suppress files="IcTicketOrdering\.java"
+            checks="HiddenField"/>
+  <suppress files="IcServerHistoryConfiguration\.java"
             checks="HiddenField"/>
 
   <suppress files="IcSCommandVersion\.java"
@@ -36,6 +36,13 @@
             checks="CyclomaticComplexity"/>
   <suppress files="IcSecPolicyDefault\.java"
             checks="NPathComplexity"/>
+
+  <suppress files="IcT1Validation\.java"
+            checks="NPathComplexity"/>
+  <suppress files="IcT1Validation\.java"
+            checks="ClassDataAbstractionCoupling"/>
+  <suppress files="IcT1Validation\.java"
+            checks="CyclomaticComplexity"/>
 
   <!-- MXBeans have specific name conventions. -->
   <suppress files="IcDatabaseMetricsMXBean\.java"

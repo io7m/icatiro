@@ -39,7 +39,6 @@ public record IcTicketOrdering(
   public IcTicketOrdering(
     final List<IcTicketColumnOrdering> ordering)
   {
-
     final var distinctColumns =
       ordering.stream()
         .map(IcTicketColumnOrdering::column)

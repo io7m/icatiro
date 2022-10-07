@@ -212,4 +212,31 @@ public final class IcStandardErrorCodes
   public static final IcErrorCode PROJECT_NONEXISTENT =
     new IcErrorCode("error-project-nonexistent");
 
+  /**
+   * The client and server have no supported protocols in common.
+   */
+
+  public static final IcErrorCode NO_SUPPORTED_PROTOCOLS =
+    new IcErrorCode("error-no-supported-protocols");
+
+  /**
+   * The server returned an error code for an HTTP request.
+   */
+
+  public static final IcErrorCode HTTP_ERROR =
+    new IcErrorCode("error-http");
+
+  /**
+   * The client is not logged in.
+   */
+
+  public static final IcErrorCode NOT_LOGGED_IN =
+    new IcErrorCode("error-not-logged-in");
+
+  /**
+   * The mail system failed.
+   */
+
+  public static final IcErrorCode MAIL_SYSTEM_FAILURE =
+    new IcErrorCode("error-mail-system-failure");
 }

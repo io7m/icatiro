@@ -39,6 +39,7 @@ public final class IcDatabaseTicketListPaging
   private final IcTicketListParameters parameters;
   private volatile int currentPage;
   private final ConcurrentHashMap<Integer, Page> pages;
+  private volatile int pagesCountApproximate;
 
   private IcDatabaseTicketListPaging(
     final UUID inUser,
@@ -93,6 +94,19 @@ public final class IcDatabaseTicketListPaging
   }
 
   @Override
+  public long pageFirstOffset()
+  {
+    return Integer.toUnsignedLong(this.currentPage)
+           * Integer.toUnsignedLong(this.parameters.limit());
+  }
+
+  @Override
+  public int pageCount()
+  {
+    return this.pagesCountApproximate;
+  }
+
+  @Override
   public boolean pageNextAvailable()
   {
     return this.pages.containsKey(Integer.valueOf(this.currentPage + 1));
@@ -129,6 +143,20 @@ public final class IcDatabaseTicketListPaging
     final var page =
       this.pages.get(Integer.valueOf(this.currentPage));
 
+    final var count =
+      (double) queries.ticketListCountWithPermissions(
+        this.user,
+        this.parameters.timeCreatedRange(),
+        this.parameters.timeUpdatedRange()
+      );
+    final var limit =
+      (double) this.parameters.limit();
+    final var eventPages =
+      Math.ceil(count / limit);
+
+    this.pagesCountApproximate =
+      Math.max(1, (int) eventPages);
+
     final var results =
       queries.ticketListWithPermissions(
         this.user,
@@ -154,7 +182,6 @@ public final class IcDatabaseTicketListPaging
 
     return results;
   }
-
 
   private static List<Object> fieldsForSeek(
     final IcTicketSummary summary,

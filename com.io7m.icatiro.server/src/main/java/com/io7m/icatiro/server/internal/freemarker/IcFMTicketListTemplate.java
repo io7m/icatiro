@@ -21,8 +21,6 @@ import freemarker.template.TemplateException;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -52,15 +50,6 @@ public final class IcFMTicketListTemplate
     final Writer output)
     throws TemplateException, IOException
   {
-    this.template.process(mapData(value), output);
-  }
-
-  private static Map<String, Object> mapData(
-    final IcFMTicketListData data)
-  {
-    final var m = new HashMap<String, Object>();
-    m.put("pageTitle", data.pageTitle());
-    m.put("tickets", data.tickets());
-    return m;
+    this.template.process(value.toTemplateHash(), output);
   }
 }

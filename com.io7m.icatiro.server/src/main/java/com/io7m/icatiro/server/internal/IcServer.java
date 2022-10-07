@@ -18,31 +18,35 @@ package com.io7m.icatiro.server.internal;
 
 import com.io7m.icatiro.database.api.IcDatabaseException;
 import com.io7m.icatiro.database.api.IcDatabaseType;
-import com.io7m.icatiro.protocol.api_v1.Ic1Messages;
-import com.io7m.icatiro.protocol.versions.IcVMessages;
+import com.io7m.icatiro.database.api.IcDatabaseUsersQueriesType;
+import com.io7m.icatiro.error_codes.IcErrorCode;
+import com.io7m.icatiro.protocol.tickets.cb.IcT1Messages;
 import com.io7m.icatiro.server.api.IcServerConfiguration;
 import com.io7m.icatiro.server.api.IcServerException;
 import com.io7m.icatiro.server.api.IcServerType;
-import com.io7m.icatiro.server.internal.api_v1.Ic1CommandServlet;
-import com.io7m.icatiro.server.internal.api_v1.Ic1Login;
-import com.io7m.icatiro.server.internal.api_v1.Ic1Sends;
-import com.io7m.icatiro.server.internal.api_v1.Ic1Versions;
+import com.io7m.icatiro.server.internal.common.IcCommonCSSServlet;
+import com.io7m.icatiro.server.internal.common.IcCommonLogoServlet;
 import com.io7m.icatiro.server.internal.freemarker.IcFMTemplateService;
+import com.io7m.icatiro.server.internal.tickets_v1.IcT1CommandServlet;
+import com.io7m.icatiro.server.internal.tickets_v1.IcT1Login;
+import com.io7m.icatiro.server.internal.tickets_v1.IcT1Sends;
+import com.io7m.icatiro.server.internal.tickets_v1.IcT1Versions;
 import com.io7m.icatiro.server.internal.views.IcViewLogin;
 import com.io7m.icatiro.server.internal.views.IcViewLogout;
 import com.io7m.icatiro.server.internal.views.IcViewMain;
-import com.io7m.icatiro.server.internal.views.IcViewResource;
 import com.io7m.icatiro.server.logging.IcServerRequestLog;
 import com.io7m.icatiro.services.api.IcServiceDirectory;
 import com.io7m.icatiro.services.api.IcServiceDirectoryType;
 import com.io7m.jmulticlose.core.CloseableCollection;
 import com.io7m.jmulticlose.core.CloseableCollectionType;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.trace.SpanKind;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
-import org.eclipse.jetty.server.session.FileSessionDataStore;
+import org.eclipse.jetty.server.session.NullSessionDataStore;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
@@ -50,10 +54,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static com.io7m.icatiro.database.api.IcDatabaseRole.ICATIRO;
 
 /**
  * The main server implementation.
@@ -65,9 +73,10 @@ public final class IcServer implements IcServerType
     LoggerFactory.getLogger(IcServer.class);
 
   private final IcServerConfiguration configuration;
-  private final CloseableCollectionType<IcServerException> resources;
+  private CloseableCollectionType<IcServerException> resources;
   private final AtomicBoolean closed;
   private IcDatabaseType database;
+  private IcServerTelemetryService telemetry;
 
   /**
    * The main server implementation.
@@ -81,55 +90,78 @@ public final class IcServer implements IcServerType
     this.configuration =
       Objects.requireNonNull(inConfiguration, "configuration");
     this.resources =
-      CloseableCollection.create(
-        () -> {
-          return new IcServerException(
-            "Server creation failed.",
-            "server-creation"
-          );
-        }
-      );
-
+      createResourceCollection();
     this.closed =
       new AtomicBoolean(false);
   }
 
+  private static CloseableCollectionType<IcServerException> createResourceCollection()
+  {
+    return CloseableCollection.create(
+      () -> {
+        return new IcServerException(
+          new IcErrorCode("server-creation"),
+          "Server creation failed."
+        );
+      }
+    );
+  }
+  
   @Override
   public void start()
     throws IcServerException
   {
-    if (this.closed.get()) {
-      throw new IllegalStateException("Server is closed!");
-    }
+    this.closed.set(false);
+    this.resources = createResourceCollection();
+
+    this.telemetry =
+      IcServerTelemetryService.create(this.configuration);
+
+    final var startupSpan =
+      this.telemetry.tracer()
+        .spanBuilder("IcServer.start")
+        .setSpanKind(SpanKind.INTERNAL)
+        .startSpan();
 
     try {
       this.database =
-        this.resources.add(this.createDatabase());
+        this.resources.add(this.createDatabase(this.telemetry.openTelemetry()));
 
-      final var services =
-        this.createServiceDirectory(this.database);
+      final var services = this.createServiceDirectory(this.database);
       this.resources.add(services);
 
-      final var apiServer = this.createAPIServer(services);
-      this.resources.add(apiServer::stop);
+      final var userAPIServer = this.createAPIServer(services);
+      this.resources.add(userAPIServer::stop);
 
-      final var viewServer = this.createViewServer(services);
-      this.resources.add(viewServer::stop);
-
+      final var userViewServer = this.createViewServer(services);
+      this.resources.add(userViewServer::stop);
     } catch (final IcDatabaseException e) {
+      startupSpan.recordException(e);
+
       try {
         this.close();
       } catch (final IcServerException ex) {
         e.addSuppressed(ex);
       }
-      throw new IcServerException(e.getMessage(), e, "database");
+      throw new IcServerException(
+        new IcErrorCode("database"),
+        e.getMessage()
+      );
     } catch (final Exception e) {
+      startupSpan.recordException(e);
+
       try {
         this.close();
       } catch (final IcServerException ex) {
         e.addSuppressed(ex);
       }
-      throw new IcServerException(e.getMessage(), e, "startup");
+      throw new IcServerException(
+        new IcErrorCode("startup"),
+        e.getMessage(),
+        e
+      );
+    } finally {
+      startupSpan.end();
     }
   }
 
@@ -147,26 +179,21 @@ public final class IcServer implements IcServerType
     throws IOException
   {
     final var services = new IcServiceDirectory();
+    services.register(IcServerTelemetryService.class, this.telemetry);
+    services.register(IcDatabaseType.class, inDatabase);
 
-    services.register(
-      IcDatabaseType.class,
-      inDatabase
-    );
+    final var userSessions = new IcUserSessionService(this.telemetry);
+    services.register(IcUserSessionService.class, userSessions);
 
-    final var userControllers = new IcServerUserControllersService();
-    services.register(IcServerUserControllersService.class, userControllers);
-
-    final var versionMessages = new IcVMessages();
-    services.register(IcVMessages.class, versionMessages);
-
-    final var api1messages = new Ic1Messages();
-    services.register(Ic1Messages.class, api1messages);
+    final var idClients =
+      IcIdentityClients.create(
+        this.configuration.locale(),
+        this.configuration.idstore()
+      );
+    services.register(IcIdentityClients.class, idClients);
 
     final var clock = new IcServerClock(this.configuration.clock());
     services.register(IcServerClock.class, clock);
-
-    final var config = new IcServerConfigurations(this.configuration);
-    services.register(IcServerConfigurations.class, config);
 
     final var strings = new IcServerStrings(this.configuration.locale());
     services.register(IcServerStrings.class, strings);
@@ -174,8 +201,17 @@ public final class IcServer implements IcServerType
     final var templates = IcFMTemplateService.create();
     services.register(IcFMTemplateService.class, templates);
 
-    services.register(Ic1Sends.class, new Ic1Sends(api1messages));
+    final var branding =
+      IcServerBrandingService.create(strings, templates, this.configuration.branding());
+    services.register(IcServerBrandingService.class, branding);
+
     services.register(IcRequestLimits.class, new IcRequestLimits(strings));
+    services.register(IcVerdantMessages.class, new IcVerdantMessages());
+    services.register(IcT1Messages.class, new IcT1Messages());
+    services.register(
+      IcT1Sends.class,
+      new IcT1Sends(services.requireService(IcT1Messages.class))
+    );
     return services;
   }
 
@@ -183,8 +219,14 @@ public final class IcServer implements IcServerType
     final IcServiceDirectoryType services)
     throws Exception
   {
+    final var httpConfig =
+      this.configuration.userViewAddress();
     final var address =
-      this.configuration.viewAddress();
+      InetSocketAddress.createUnresolved(
+        httpConfig.listenAddress(),
+        httpConfig.listenPort()
+      );
+
     final var server =
       new Server(address);
 
@@ -198,7 +240,7 @@ public final class IcServer implements IcServerType
       new ServletContextHandler();
 
     servlets.addEventListener(
-      services.requireService(IcServerUserControllersService.class)
+      services.requireService(IcUserSessionService.class)
     );
 
     servlets.addServlet(
@@ -217,22 +259,46 @@ public final class IcServer implements IcServerType
       servletHolders.create(IcViewLogin.class, IcViewLogin::new),
       "/login/*"
     );
+
     servlets.addServlet(
-      servletHolders.create(IcViewResource.class, IcViewResource::new),
-      "/resource/*"
+      servletHolders.create(IcCommonCSSServlet.class, IcCommonCSSServlet::new),
+      "/css/*"
+    );
+    servlets.addServlet(
+      servletHolders.create(IcCommonCSSServlet.class, IcCommonCSSServlet::new),
+      "/css"
+    );
+    servlets.addServlet(
+      servletHolders.create(
+        IcCommonLogoServlet.class,
+        IcCommonLogoServlet::new),
+      "/logo/*"
+    );
+    servlets.addServlet(
+      servletHolders.create(
+        IcCommonLogoServlet.class,
+        IcCommonLogoServlet::new),
+      "/logo"
+    );
+
+    servlets.addServlet(
+      servletHolders.create(
+        IcCommonLogoServlet.class,
+        IcCommonLogoServlet::new),
+      "/favicon.ico"
     );
 
     /*
-     * Set up a session handler that allows for Servlets to have sessions
-     * that can survive server restarts.
+     * Set up a session handler.
      */
 
     final var sessionIds = new DefaultSessionIdManager(server);
+    server.setSessionIdManager(sessionIds);
+
     final var sessionHandler = new SessionHandler();
+    sessionHandler.setSessionCookie("ICATIRO_VIEW_SESSION");
 
-    final var sessionStore = new FileSessionDataStore();
-    sessionStore.setStoreDir(this.configuration.sessionDirectory().toFile());
-
+    final var sessionStore = new NullSessionDataStore();
     final var sessionCache = new DefaultSessionCache(sessionHandler);
     sessionCache.setSessionDataStore(sessionStore);
 
@@ -276,8 +342,14 @@ public final class IcServer implements IcServerType
     final IcServiceDirectoryType services)
     throws Exception
   {
+    final var httpConfig =
+      this.configuration.userApiAddress();
     final var address =
-      this.configuration.apiAddress();
+      InetSocketAddress.createUnresolved(
+        httpConfig.listenAddress(),
+        httpConfig.listenPort()
+      );
+
     final var server =
       new Server(address);
 
@@ -290,34 +362,34 @@ public final class IcServer implements IcServerType
     final var servlets =
       new ServletContextHandler();
 
-    servlets.addEventListener(
-      services.requireService(IcServerUserControllersService.class)
-    );
-
     servlets.addServlet(
-      servletHolders.create(Ic1Versions.class, Ic1Versions::new),
+      servletHolders.create(IcT1Versions.class, IcT1Versions::new),
       "/"
     );
     servlets.addServlet(
-      servletHolders.create(Ic1Login.class, Ic1Login::new),
-      "/api/1/0/login"
+      servletHolders.create(IcT1Login.class, IcT1Login::new),
+      "/tickets/1/0/login"
     );
     servlets.addServlet(
-      servletHolders.create(Ic1CommandServlet.class, Ic1CommandServlet::new),
-      "/api/1/0/command"
+      servletHolders.create(IcT1CommandServlet.class, IcT1CommandServlet::new),
+      "/tickets/1/0/command"
+    );
+
+    servlets.addEventListener(
+      services.requireService(IcUserSessionService.class)
     );
 
     /*
-     * Set up a session handler that allows for Servlets to have sessions
-     * that can survive server restarts.
+     * Set up a session handler.
      */
 
     final var sessionIds = new DefaultSessionIdManager(server);
+    server.setSessionIdManager(sessionIds);
+
     final var sessionHandler = new SessionHandler();
+    sessionHandler.setSessionCookie("ICATIRO_API_SESSION");
 
-    final var sessionStore = new FileSessionDataStore();
-    sessionStore.setStoreDir(this.configuration.sessionDirectory().toFile());
-
+    final var sessionStore = new NullSessionDataStore();
     final var sessionCache = new DefaultSessionCache(sessionHandler);
     sessionCache.setSessionDataStore(sessionStore);
 
@@ -357,17 +429,18 @@ public final class IcServer implements IcServerType
     return server;
   }
 
-  private IcDatabaseType createDatabase()
+  private IcDatabaseType createDatabase(
+    final OpenTelemetry openTelemetry)
     throws IcDatabaseException
   {
     return this.configuration.databases()
       .open(
         this.configuration.databaseConfiguration(),
+        openTelemetry,
         event -> {
 
         });
   }
-
 
   @Override
   public void close()
@@ -375,6 +448,40 @@ public final class IcServer implements IcServerType
   {
     if (this.closed.compareAndSet(false, true)) {
       this.resources.close();
+    }
+  }
+
+  @Override
+  public void userInitialSet(
+    final UUID userId)
+    throws IcServerException
+  {
+    try (var c = this.database.openConnection(ICATIRO)) {
+      try (var t = c.openTransaction()) {
+        final var users =
+          t.queries(IcDatabaseUsersQueriesType.class);
+        users.userInitialSet(userId);
+        t.commit();
+      }
+    } catch (final IcDatabaseException e) {
+      throw new IcServerException(e.errorCode(), e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public void userInitialUnset(
+    final UUID userId)
+    throws IcServerException
+  {
+    try (var c = this.database.openConnection(ICATIRO)) {
+      try (var t = c.openTransaction()) {
+        final var users =
+          t.queries(IcDatabaseUsersQueriesType.class);
+        users.userInitialUnset(userId);
+        t.commit();
+      }
+    } catch (final IcDatabaseException e) {
+      throw new IcServerException(e.errorCode(), e.getMessage(), e);
     }
   }
 }

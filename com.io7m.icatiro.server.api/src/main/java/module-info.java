@@ -25,5 +25,17 @@ module com.io7m.icatiro.server.api
 
   requires transitive com.io7m.icatiro.database.api;
 
+  requires com.fasterxml.jackson.databind;
+  requires com.fasterxml.jackson.datatype.jsr310;
+  requires com.fasterxml.jackson.datatype.jdk8;
+
+  requires com.io7m.dixmont.colors;
+  requires com.io7m.cxbutton.core;
+
+  uses com.io7m.icatiro.database.api.IcDatabaseFactoryType;
+
+  opens com.io7m.icatiro.server.api
+    to com.fasterxml.jackson.databind;
+
   exports com.io7m.icatiro.server.api;
 }

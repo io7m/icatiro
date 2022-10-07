@@ -16,7 +16,9 @@
 
 package com.io7m.icatiro.server.internal.command_exec;
 
-import com.io7m.icatiro.protocol.api.IcProtocolMessageType;
+import com.io7m.icatiro.protocol.IcProtocolMessageType;
+
+import java.io.IOException;
 
 /**
  * The type of command executors.
@@ -39,11 +41,11 @@ public interface IcCommandExecutorType<
    *
    * @return The result of execution
    *
-   * @throws Exception On errors
+   * @throws IcCommandExecutionFailure On errors
    */
 
-  IcCommandExecutionResult<R> execute(
+  R execute(
     C context,
     M command)
-    throws Exception;
+    throws IcCommandExecutionFailure, IOException, InterruptedException;
 }

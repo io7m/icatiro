@@ -33,11 +33,14 @@ module com.io7m.icatiro.database.postgres
   requires com.io7m.trasco.api;
   requires com.io7m.trasco.vanilla;
   requires com.zaxxer.hikari;
-  requires commons.math3;
   requires java.management;
   requires org.jooq;
   requires org.postgresql.jdbc;
   requires org.slf4j;
+
+  requires io.opentelemetry.api;
+  requires io.opentelemetry.context;
+  requires io.opentelemetry.semconv;
 
   opens com.io7m.icatiro.database.postgres.internal to java.management;
 

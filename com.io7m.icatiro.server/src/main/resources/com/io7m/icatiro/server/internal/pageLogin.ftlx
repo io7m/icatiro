@@ -1,0 +1,58 @@
+[#ftl output_format="XHTML"]
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8"/>
+  <link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+  <link rel="stylesheet" type="text/css" href="/css/style.css"/>
+  <link rel="stylesheet" type="text/css" href="/css/cxbutton.css"/>
+  <title>${htmlTitle}</title>
+</head>
+<body>
+
+<div id="ic_main">
+  <div id="ic_header">
+    <span class="ic_logo">
+      <img src="/logo" width="16" height="16" class="ic_header_logo ic_logo"/> ${pageHeaderTitle}
+    </span>
+  </div>
+
+  <div id="ic_content">
+    <div class="ic_loginForm_container">
+      [#if logo]
+      <div class="ic_loginForm_logo">
+        <img src="/logo"/>
+      </div>
+      [/#if]
+
+      [#if loginTitle??]
+      <p class="ic_loginForm_loginTitle">${loginTitle}</p>
+      [/#if]
+
+      <form class="ic_loginForm" action="/login" method="post">
+        <label class="ic_loginForm_usernameLabel"   for="user">Username</label>
+        <input class="ic_loginForm_username"        type="text" name="username"/>
+        <label class="ic_loginForm_passwordLabel"   for="password">Password</label>
+        <input class="ic_loginForm_password"        type="password" name="password"/>
+        <input class="ic_loginForm_submit cxbutton" type="submit" value="Log In" />
+      </form>
+
+      [#if errorMessage??]
+      <div class="ic_loginForm_error">
+        <p class="ic_message_error">
+          ${errorMessage.message()}
+          [#if errorMessage.resolution().isPresent()]<br/><br/>${errorMessage.resolution().get()}[/#if]
+          [#if errorMessage.requestId().isPresent()]<br/><br/>Request ID: ${errorMessage.requestId().get()}[/#if]
+        </p>
+      </div>
+      [/#if]
+
+      <p><a href="${loginPasswordReset}">Forgot password...</a></p>
+
+      [#if loginExtraText??]${loginExtraText?no_esc}[/#if]
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

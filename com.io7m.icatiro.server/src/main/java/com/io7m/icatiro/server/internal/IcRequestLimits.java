@@ -98,6 +98,6 @@ public final class IcRequestLimits implements IcServiceType
   public String toString()
   {
     return "[IcRequestLimits 0x%s]"
-      .formatted(Long.toUnsignedString(this.hashCode()));
+      .formatted(Long.toUnsignedString(this.hashCode(), 16));
   }
 }

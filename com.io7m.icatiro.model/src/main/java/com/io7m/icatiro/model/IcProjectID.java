@@ -23,7 +23,9 @@ package com.io7m.icatiro.model;
  */
 
 public record IcProjectID(long value)
-  implements Comparable<IcProjectID>, IcProjectUniqueIdentifierType
+  implements Comparable<IcProjectID>,
+  IcProjectUniqueIdentifierType,
+  IcAccessControlledType
 {
   @Override
   public String toString()
@@ -36,5 +38,11 @@ public record IcProjectID(long value)
     final IcProjectID other)
   {
     return Long.compareUnsigned(this.value, other.value);
+  }
+
+  @Override
+  public String objectType()
+  {
+    return "project";
   }
 }

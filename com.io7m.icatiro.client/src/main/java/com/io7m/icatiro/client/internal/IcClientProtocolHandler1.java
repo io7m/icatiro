@@ -18,17 +18,34 @@
 package com.io7m.icatiro.client.internal;
 
 import com.io7m.icatiro.client.api.IcClientException;
-import com.io7m.icatiro.model.IcPasswordException;
-import com.io7m.icatiro.model.IcUser;
-import com.io7m.icatiro.protocol.api.IcProtocolException;
-import com.io7m.icatiro.protocol.api_v1.Ic1CommandLogin;
-import com.io7m.icatiro.protocol.api_v1.Ic1CommandType;
-import com.io7m.icatiro.protocol.api_v1.Ic1CommandUserSelf;
-import com.io7m.icatiro.protocol.api_v1.Ic1Messages;
-import com.io7m.icatiro.protocol.api_v1.Ic1ResponseError;
-import com.io7m.icatiro.protocol.api_v1.Ic1ResponseLogin;
-import com.io7m.icatiro.protocol.api_v1.Ic1ResponseType;
-import com.io7m.icatiro.protocol.api_v1.Ic1ResponseUserSelf;
+import com.io7m.icatiro.error_codes.IcErrorCode;
+import com.io7m.icatiro.model.IcPage;
+import com.io7m.icatiro.model.IcPermissionScopedType;
+import com.io7m.icatiro.model.IcProject;
+import com.io7m.icatiro.model.IcProjectShortName;
+import com.io7m.icatiro.model.IcProjectTitle;
+import com.io7m.icatiro.model.IcTicketCreation;
+import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.model.IcTicketSummary;
+import com.io7m.icatiro.protocol.IcProtocolException;
+import com.io7m.icatiro.protocol.tickets.IcTCommandLogin;
+import com.io7m.icatiro.protocol.tickets.IcTCommandPermissionGrant;
+import com.io7m.icatiro.protocol.tickets.IcTCommandProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchBegin;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchNext;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchPrevious;
+import com.io7m.icatiro.protocol.tickets.IcTCommandType;
+import com.io7m.icatiro.protocol.tickets.IcTResponseError;
+import com.io7m.icatiro.protocol.tickets.IcTResponseLogin;
+import com.io7m.icatiro.protocol.tickets.IcTResponsePermissionGrant;
+import com.io7m.icatiro.protocol.tickets.IcTResponseProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchBegin;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchNext;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchPrevious;
+import com.io7m.icatiro.protocol.tickets.IcTResponseType;
+import com.io7m.icatiro.protocol.tickets.cb.IcT1Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,8 +54,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.UUID;
 
+import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.IO_ERROR;
+import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROTOCOL_ERROR;
+import static com.io7m.idstore.error_codes.IdStandardErrorCodes.AUTHENTICATION_ERROR;
 import static java.net.http.HttpResponse.BodyHandlers;
 
 /**
@@ -52,9 +72,9 @@ public final class IcClientProtocolHandler1
     LoggerFactory.getLogger(IcClientProtocolHandler1.class);
 
   private final URI commandURI;
-  private final URI transactionURI;
-  private final Ic1Messages messages;
+  private final IcT1Messages messages;
   private final URI loginURI;
+  private IcTCommandLogin mostRecentLogin;
 
   /**
    * The version 1 protocol handler.
@@ -72,7 +92,7 @@ public final class IcClientProtocolHandler1
     super(inHttpClient, inStrings, inBase);
 
     this.messages =
-      new Ic1Messages();
+      new IcT1Messages();
 
     this.loginURI =
       inBase.resolve("login")
@@ -80,63 +100,41 @@ public final class IcClientProtocolHandler1
     this.commandURI =
       inBase.resolve("command")
         .normalize();
-    this.transactionURI =
-      inBase.resolve("transaction")
-        .normalize();
-  }
-
-  private static <A, B, E extends Exception> Optional<B> mapPartial(
-    final Optional<A> o,
-    final FunctionType<A, B, E> f)
-    throws E
-  {
-    if (o.isPresent()) {
-      return Optional.of(f.apply(o.get()));
-    }
-    return Optional.empty();
   }
 
   @Override
-  public IcClientProtocolHandlerType login(
+  public IcNewHandler login(
     final String user,
     final String password,
     final URI base)
     throws IcClientException, InterruptedException
   {
-    this.sendLogin(new Ic1CommandLogin(user, password));
-    return this;
+    this.mostRecentLogin = new IcTCommandLogin(user, password);
+    final var result = this.sendLogin(this.mostRecentLogin).user();
+    return new IcNewHandler(result, this);
   }
 
-  private Ic1ResponseLogin sendLogin(
-    final Ic1CommandLogin message)
+  private IcTResponseLogin sendLogin(
+    final IcTCommandLogin message)
     throws InterruptedException, IcClientException
   {
-    return this.send(this.loginURI, Ic1ResponseLogin.class, message, false)
-      .orElseThrow(() -> new IllegalStateException("send() returned empty"));
+    return this.send(1, this.loginURI, IcTResponseLogin.class, true, message);
   }
 
-  private <T extends Ic1ResponseType> T sendCommand(
+  private <T extends IcTResponseType> T sendCommand(
     final Class<T> responseClass,
-    final Ic1CommandType<T> message)
+    final IcTCommandType<T> message)
     throws InterruptedException, IcClientException
   {
-    return this.send(this.commandURI, responseClass, message, false)
-      .orElseThrow(() -> new IllegalStateException("send() returned empty"));
+    return this.send(1, this.commandURI, responseClass, false, message);
   }
 
-  private <T extends Ic1ResponseType> Optional<T> sendCommandOptional(
-    final Class<T> responseClass,
-    final Ic1CommandType<T> message)
-    throws InterruptedException, IcClientException
-  {
-    return this.send(this.commandURI, responseClass, message, true);
-  }
-
-  private <T extends Ic1ResponseType> Optional<T> send(
+  private <T extends IcTResponseType> T send(
+    final int attempt,
     final URI uri,
     final Class<T> responseClass,
-    final Ic1CommandType<T> message,
-    final boolean allowNotFound)
+    final boolean isLoggingIn,
+    final IcTCommandType<T> message)
     throws InterruptedException, IcClientException
   {
     try {
@@ -157,10 +155,6 @@ public final class IcClientProtocolHandler1
 
       LOG.debug("server: status {}", response.statusCode());
 
-      if (response.statusCode() == 404 && allowNotFound) {
-        return Optional.empty();
-      }
-
       final var responseHeaders =
         response.headers();
 
@@ -168,13 +162,14 @@ public final class IcClientProtocolHandler1
         responseHeaders.firstValue("content-type")
           .orElse("application/octet-stream");
 
-      if (!contentType.equals(Ic1Messages.contentType())) {
+      if (!contentType.equals(IcT1Messages.contentType())) {
         throw new IcClientException(
+          PROTOCOL_ERROR,
           this.strings()
             .format(
               "errorContentType",
               commandType,
-              Ic1Messages.contentType(),
+              IcT1Messages.contentType(),
               contentType)
         );
       }
@@ -182,21 +177,37 @@ public final class IcClientProtocolHandler1
       final var responseMessage =
         this.messages.parse(response.body());
 
-      if (!(responseMessage instanceof Ic1ResponseType)) {
+      if (!(responseMessage instanceof IcTResponseType)) {
         throw new IcClientException(
+          PROTOCOL_ERROR,
           this.strings()
             .format(
               "errorResponseType",
               "(unavailable)",
               commandType,
-              Ic1ResponseType.class,
+              IcTResponseType.class,
               responseMessage.getClass())
         );
       }
 
-      final var responseActual = (Ic1ResponseType) responseMessage;
-      if (responseActual instanceof Ic1ResponseError error) {
+      final var responseActual = (IcTResponseType) responseMessage;
+      if (responseActual instanceof IcTResponseError error) {
+        if (attempt < 3) {
+          if (isAuthenticationError(error) && !isLoggingIn) {
+            LOG.debug("attempting re-login");
+            this.sendLogin(this.mostRecentLogin);
+            return this.send(
+              attempt + 1,
+              uri,
+              responseClass,
+              false,
+              message
+            );
+          }
+        }
+
         throw new IcClientException(
+          new IcErrorCode(error.errorCode()),
           this.strings()
             .format(
               "errorResponse",
@@ -210,6 +221,7 @@ public final class IcClientProtocolHandler1
 
       if (!Objects.equals(responseActual.getClass(), responseClass)) {
         throw new IcClientException(
+          PROTOCOL_ERROR,
           this.strings()
             .format(
               "errorResponseType",
@@ -220,40 +232,83 @@ public final class IcClientProtocolHandler1
         );
       }
 
-      return Optional.of(responseClass.cast(responseMessage));
-    } catch (final IcProtocolException | IOException e) {
-      throw new IcClientException(e);
+      return responseClass.cast(responseMessage);
+    } catch (final IcProtocolException e) {
+      throw new IcClientException(PROTOCOL_ERROR, e);
+    } catch (final IOException e) {
+      throw new IcClientException(IO_ERROR, e);
     }
+  }
+
+  private static boolean isAuthenticationError(
+    final IcTResponseError error)
+  {
+    return Objects.equals(error.errorCode(), AUTHENTICATION_ERROR.id());
   }
 
   @Override
-  public IcUser userSelf()
+  public IcTicketSummary ticketCreate(
+    final IcTicketCreation create)
     throws IcClientException, InterruptedException
   {
-    try {
-      final var response =
-        this.sendCommand(
-          Ic1ResponseUserSelf.class,
-          new Ic1CommandUserSelf()
-        );
-
-      return response.user().toUser();
-    } catch (final IcPasswordException e) {
-      throw new IcClientException(e);
-    }
+    return this.sendCommand(
+      IcTResponseTicketCreate.class,
+      new IcTCommandTicketCreate(create)
+    ).ticket();
   }
 
-  interface FunctionType<A, B, E extends Exception>
+  @Override
+  public IcPage<IcTicketSummary> ticketSearchBegin(
+    final IcTicketListParameters parameters)
+    throws IcClientException, InterruptedException
   {
-    B apply(A x)
-      throws E;
+    return this.sendCommand(
+      IcTResponseTicketSearchBegin.class,
+      new IcTCommandTicketSearchBegin(parameters)
+    ).tickets();
   }
 
-  private static final class NotFoundException extends Exception
+  @Override
+  public IcPage<IcTicketSummary> ticketSearchNext()
+    throws IcClientException, InterruptedException
   {
-    NotFoundException()
-    {
+    return this.sendCommand(
+      IcTResponseTicketSearchNext.class,
+      new IcTCommandTicketSearchNext()
+    ).tickets();
+  }
 
-    }
+  @Override
+  public IcPage<IcTicketSummary> ticketSearchPrevious()
+    throws IcClientException, InterruptedException
+  {
+    return this.sendCommand(
+      IcTResponseTicketSearchPrevious.class,
+      new IcTCommandTicketSearchPrevious()
+    ).tickets();
+  }
+
+  @Override
+  public IcProject projectCreate(
+    final IcProjectShortName shortName,
+    final IcProjectTitle title)
+    throws IcClientException, InterruptedException
+  {
+    return this.sendCommand(
+      IcTResponseProjectCreate.class,
+      new IcTCommandProjectCreate(shortName, title)
+    ).project();
+  }
+
+  @Override
+  public void permissionGrant(
+    final UUID targetUser,
+    final IcPermissionScopedType permission)
+    throws IcClientException, InterruptedException
+  {
+    this.sendCommand(
+      IcTResponsePermissionGrant.class,
+      new IcTCommandPermissionGrant(targetUser, permission)
+    );
   }
 }

@@ -16,6 +16,8 @@
 
 package com.io7m.icatiro.client.api;
 
+import com.io7m.icatiro.model.IcUser;
+
 import java.io.Closeable;
 import java.net.URI;
 
@@ -24,7 +26,10 @@ import java.net.URI;
  */
 
 public interface IcClientType
-  extends Closeable, IcClientUsersType
+  extends Closeable,
+  IcClientTicketsType,
+  IcClientProjectsType,
+  IcClientPermissionsType
 {
   /**
    * Log in.
@@ -33,11 +38,13 @@ public interface IcClientType
    * @param password The password
    * @param base     The base URI
    *
+   * @return The current user profile
+   *
    * @throws IcClientException    On errors
    * @throws InterruptedException On interruption
    */
 
-  void login(
+  IcUser login(
     String user,
     String password,
     URI base)

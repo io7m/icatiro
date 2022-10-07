@@ -14,20 +14,28 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+import com.io7m.icatiro.tests.arbitraries.IcArbAccessControlledObjectProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbAuditEventProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbHashProvider;
-import com.io7m.icatiro.tests.arbitraries.IcArbIcVMessagesProvider;
-import com.io7m.icatiro.tests.arbitraries.IcArbIcVProtocolSupportedProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbIcTMessageProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbOffsetDateTimeProvider;
-import com.io7m.icatiro.tests.arbitraries.IcArbPasswordProvider;
-import com.io7m.icatiro.tests.arbitraries.IcArbSubsetMatchProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbPermissionScopedProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbPermissionSetProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbProjectIdProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbProjectProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbProjectShortNameProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbProjectTitleProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTicketCreationProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTicketIdProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTicketListParametersProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTicketOrderingProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTicketSummaryProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTicketTitleProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTimeRangeProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbTokenProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbURIProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbUUIDProvider;
-import com.io7m.icatiro.tests.arbitraries.IcArbUserDisplayNameProvider;
-import com.io7m.icatiro.tests.arbitraries.IcArbUserEmailProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbUserProvider;
-import com.io7m.icatiro.tests.arbitraries.IcArbUserSummaryProvider;
 import net.jqwik.api.providers.ArbitraryProvider;
 
 /**
@@ -39,26 +47,36 @@ module com.io7m.icatiro.tests.arbitraries
   requires static org.osgi.annotation.bundle;
   requires static org.osgi.annotation.versioning;
 
-  requires transitive com.io7m.icatiro.protocol.versions;
   requires transitive com.io7m.icatiro.model;
+  requires transitive com.io7m.icatiro.protocol.tickets;
   requires transitive net.jqwik.api;
+
+  uses ArbitraryProvider;
 
   provides ArbitraryProvider
     with
-      IcArbIcVMessagesProvider,
-      IcArbIcVProtocolSupportedProvider,
+      IcArbAccessControlledObjectProvider,
       IcArbAuditEventProvider,
       IcArbHashProvider,
+      IcArbIcTMessageProvider,
       IcArbOffsetDateTimeProvider,
-      IcArbPasswordProvider,
-      IcArbSubsetMatchProvider,
+      IcArbPermissionScopedProvider,
+      IcArbPermissionSetProvider,
+      IcArbProjectIdProvider,
+      IcArbProjectProvider,
+      IcArbProjectShortNameProvider,
+      IcArbProjectTitleProvider,
+      IcArbTicketCreationProvider,
+      IcArbTicketIdProvider,
+      IcArbTicketListParametersProvider,
+      IcArbTicketOrderingProvider,
+      IcArbTicketSummaryProvider,
+      IcArbTicketTitleProvider,
+      IcArbTimeRangeProvider,
       IcArbTokenProvider,
       IcArbURIProvider,
       IcArbUUIDProvider,
-      IcArbUserDisplayNameProvider,
-      IcArbUserEmailProvider,
-      IcArbUserProvider,
-      IcArbUserSummaryProvider
+      IcArbUserProvider
     ;
 
   exports com.io7m.icatiro.tests.arbitraries;

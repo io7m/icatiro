@@ -50,12 +50,7 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>com.io7m.icatiro.protocol.api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>com.io7m.icatiro.protocol.versions</artifactId>
+      <artifactId>com.io7m.icatiro.protocol</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -69,6 +64,22 @@
       <version>${project.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>com.io7m.idstore</groupId>
+      <artifactId>com.io7m.idstore.admin_client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.io7m.idstore</groupId>
+      <artifactId>com.io7m.idstore.user_client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.io7m.idstore</groupId>
+      <artifactId>com.io7m.idstore.server</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.io7m.idstore</groupId>
+      <artifactId>com.io7m.idstore.database.postgres</artifactId>
+    </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
@@ -121,6 +132,14 @@
       <groupId>net.jqwik</groupId>
       <artifactId>jqwik-engine</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.davidmoten</groupId>
+      <artifactId>subethasmtp</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -130,12 +149,19 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
+            ${argLine}
             --add-opens
             org.junit.platform.commons/org.junit.platform.commons.logging=ALL-UNNAMED
             --add-opens
             org.junit.platform.commons/org.junit.platform.commons.util=ALL-UNNAMED
           </argLine>
         </configuration>
+      </plugin>
+
+      <!-- Determine test coverage -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

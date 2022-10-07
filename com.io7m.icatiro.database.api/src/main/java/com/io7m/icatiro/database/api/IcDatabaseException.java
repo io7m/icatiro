@@ -18,6 +18,7 @@
 package com.io7m.icatiro.database.api;
 
 import com.io7m.icatiro.error_codes.IcErrorCode;
+import com.io7m.icatiro.error_codes.IcException;
 
 import java.util.Objects;
 
@@ -25,10 +26,8 @@ import java.util.Objects;
  * The type of exceptions raised by the server database.
  */
 
-public final class IcDatabaseException extends Exception
+public final class IcDatabaseException extends IcException
 {
-  private final IcErrorCode errorCode;
-
   /**
    * Create an exception.
    *
@@ -40,9 +39,7 @@ public final class IcDatabaseException extends Exception
     final String message,
     final IcErrorCode inErrorCode)
   {
-    super(Objects.requireNonNull(message, "message"));
-    this.errorCode =
-      Objects.requireNonNull(inErrorCode, "errorCode");
+    super(inErrorCode, Objects.requireNonNull(message, "message"));
   }
 
   /**
@@ -59,10 +56,9 @@ public final class IcDatabaseException extends Exception
     final IcErrorCode inErrorCode)
   {
     super(
+      inErrorCode,
       Objects.requireNonNull(message, "message"),
       Objects.requireNonNull(cause, "cause"));
-    this.errorCode =
-      Objects.requireNonNull(inErrorCode, "errorCode");
   }
 
   /**
@@ -76,17 +72,6 @@ public final class IcDatabaseException extends Exception
     final Throwable cause,
     final IcErrorCode inErrorCode)
   {
-    super(Objects.requireNonNull(cause, "cause"));
-    this.errorCode =
-      Objects.requireNonNull(inErrorCode, "errorCode");
-  }
-
-  /**
-   * @return An error code used to identify the general cause of the exception
-   */
-
-  public IcErrorCode errorCode()
-  {
-    return this.errorCode;
+    super(inErrorCode, Objects.requireNonNull(cause, "cause"));
   }
 }

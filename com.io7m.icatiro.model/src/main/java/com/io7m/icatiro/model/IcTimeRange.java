@@ -19,6 +19,8 @@ package com.io7m.icatiro.model;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
+import static java.time.ZoneOffset.UTC;
+
 /**
  * An inclusive range of time.
  *
@@ -30,6 +32,24 @@ public record IcTimeRange(
   OffsetDateTime timeLower,
   OffsetDateTime timeUpper)
 {
+  private static final OffsetDateTime TIME_LOWER =
+    OffsetDateTime.of(
+      1970,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      UTC
+    );
+
+  private static final IcTimeRange LARGEST =
+    new IcTimeRange(
+      TIME_LOWER,
+      TIME_LOWER.plusYears(100_000L)
+    );
+
   /**
    * An inclusive range of time.
    *
@@ -48,5 +68,14 @@ public record IcTimeRange(
           .formatted(timeUpper, timeLower)
       );
     }
+  }
+
+  /**
+   * @return The largest sensible time range
+   */
+
+  public static IcTimeRange largest()
+  {
+    return LARGEST;
   }
 }

@@ -27,5 +27,8 @@ module com.io7m.icatiro.database.api
   requires transitive com.io7m.icatiro.error_codes;
   requires transitive com.io7m.icatiro.services.api;
 
+  requires io.opentelemetry.api;
+  requires io.opentelemetry.context;
+
   exports com.io7m.icatiro.database.api;
 }

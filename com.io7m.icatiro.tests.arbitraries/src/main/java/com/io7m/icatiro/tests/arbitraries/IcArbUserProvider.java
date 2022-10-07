@@ -16,16 +16,16 @@
 
 package com.io7m.icatiro.tests.arbitraries;
 
-import com.io7m.icatiro.model.IcPassword;
+import com.io7m.icatiro.model.IcPermissionSet;
 import com.io7m.icatiro.model.IcUser;
-import com.io7m.icatiro.model.IcUserDisplayName;
-import com.io7m.icatiro.model.IcUserEmail;
+import com.io7m.idstore.model.IdEmail;
+import com.io7m.idstore.model.IdName;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
 import net.jqwik.api.providers.TypeUsage;
 
-import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -59,30 +59,24 @@ public final class IcArbUserProvider extends IcArbAbstractProvider
     final var u =
       Arbitraries.defaultFor(UUID.class);
     final var d =
-      Arbitraries.defaultFor(IcUserDisplayName.class);
+      Arbitraries.defaultFor(IdName.class);
     final var e =
-      Arbitraries.defaultFor(IcUserEmail.class);
-    final var t =
-      Arbitraries.defaultFor(OffsetDateTime.class);
+      Arbitraries.defaultFor(IdEmail.class);
     final var p =
-      Arbitraries.defaultFor(IcPassword.class);
+      Arbitraries.defaultFor(IcPermissionSet.class);
 
     final Arbitrary<IcUser> a =
-      Combinators.combine(u, d, e, t, t, p)
+      Combinators.combine(u, d, e, p)
         .as((
               UUID id,
-              IcUserDisplayName name,
-              IcUserEmail email,
-              OffsetDateTime t0,
-              OffsetDateTime t1,
-              IcPassword pass) -> {
+              IdName name,
+              IdEmail email,
+              IcPermissionSet ps) -> {
           return new IcUser(
             id,
             name,
-            email,
-            t0,
-            t1,
-            pass
+            List.of(email),
+            ps
           );
         });
 

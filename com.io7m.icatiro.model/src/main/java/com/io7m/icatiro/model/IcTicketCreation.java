@@ -26,7 +26,7 @@ import java.util.Objects;
  */
 
 public record IcTicketCreation(
-  IcProjectUniqueIdentifierType project,
+  IcProjectID project,
   IcTicketTitle title)
 {
   /**

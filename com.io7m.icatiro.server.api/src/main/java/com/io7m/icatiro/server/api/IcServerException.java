@@ -17,74 +17,68 @@
 
 package com.io7m.icatiro.server.api;
 
+import com.io7m.icatiro.error_codes.IcErrorCode;
+import com.io7m.icatiro.error_codes.IcException;
+
 import java.util.Objects;
 
 /**
  * The type of exceptions raised by the server.
  */
 
-public final class IcServerException extends Exception
+public final class IcServerException extends IcException
 {
-  private final String errorCode;
-
   /**
    * Create an exception.
    *
-   * @param message     The message
-   * @param inErrorCode The error code
+   * @param errorCode The error code
+   * @param message   The message
    */
 
   public IcServerException(
-    final String message,
-    final String inErrorCode)
-  {
-    super(Objects.requireNonNull(message, "message"));
-    this.errorCode =
-      Objects.requireNonNull(inErrorCode, "errorCode");
-  }
-
-  /**
-   * Create an exception.
-   *
-   * @param message     The message
-   * @param cause       The cause
-   * @param inErrorCode The error code
-   */
-
-  public IcServerException(
-    final String message,
-    final Throwable cause,
-    final String inErrorCode)
+    final IcErrorCode errorCode,
+    final String message)
   {
     super(
-      Objects.requireNonNull(message, "message"),
-      Objects.requireNonNull(cause, "cause"));
-    this.errorCode =
-      Objects.requireNonNull(inErrorCode, "errorCode");
+      errorCode,
+      Objects.requireNonNull(message, "message")
+    );
   }
 
   /**
    * Create an exception.
    *
-   * @param cause       The cause
-   * @param inErrorCode The error code
+   * @param errorCode The error code
+   * @param message   The message
+   * @param cause     The cause
    */
 
   public IcServerException(
-    final Throwable cause,
-    final String inErrorCode)
+    final IcErrorCode errorCode,
+    final String message,
+    final Throwable cause)
   {
-    super(Objects.requireNonNull(cause, "cause"));
-    this.errorCode =
-      Objects.requireNonNull(inErrorCode, "errorCode");
+    super(
+      errorCode,
+      Objects.requireNonNull(message, "message"),
+      Objects.requireNonNull(cause, "cause")
+    );
   }
 
   /**
-   * @return An error code used to identify the general cause of the exception
+   * Create an exception.
+   *
+   * @param errorCode The error code
+   * @param cause     The cause
    */
 
-  public String errorCode()
+  public IcServerException(
+    final IcErrorCode errorCode,
+    final Throwable cause)
   {
-    return this.errorCode;
+    super(
+      errorCode,
+      Objects.requireNonNull(cause, "cause")
+    );
   }
 }

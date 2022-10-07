@@ -31,18 +31,39 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>com.io7m.icatiro.protocol.versions</artifactId>
+      <artifactId>com.io7m.icatiro.error_codes</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>com.io7m.icatiro.protocol.api</artifactId>
+      <artifactId>com.io7m.icatiro.protocol</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>com.io7m.icatiro.protocol.api_v1</artifactId>
+      <artifactId>com.io7m.icatiro.protocol.tickets</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>com.io7m.icatiro.protocol.tickets.cb</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.io7m.verdant</groupId>
+      <artifactId>com.io7m.verdant.core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.io7m.verdant</groupId>
+      <artifactId>com.io7m.verdant.core.cb</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.io7m.genevan</groupId>
+      <artifactId>com.io7m.genevan.core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.io7m.idstore</groupId>
+      <artifactId>com.io7m.idstore.error_codes</artifactId>
     </dependency>
 
     <dependency>

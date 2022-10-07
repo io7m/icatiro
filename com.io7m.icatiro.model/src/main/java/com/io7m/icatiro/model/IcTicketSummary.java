@@ -16,6 +16,8 @@
 
 package com.io7m.icatiro.model;
 
+import com.io7m.idstore.model.IdName;
+
 import java.time.OffsetDateTime;
 import java.util.Objects;
 import java.util.UUID;
@@ -23,7 +25,6 @@ import java.util.UUID;
 /**
  * The short summary of a ticket.
  *
- * @param projectId        The project ID
  * @param projectShortName The project short name
  * @param projectTitle     The project title
  * @param reporter         The ID of the reporter
@@ -35,7 +36,6 @@ import java.util.UUID;
  */
 
 public record IcTicketSummary(
-  IcProjectID projectId,
   IcProjectTitle projectTitle,
   IcProjectShortName projectShortName,
   IcTicketID ticketId,
@@ -43,12 +43,11 @@ public record IcTicketSummary(
   OffsetDateTime timeCreated,
   OffsetDateTime timeUpdated,
   UUID reporter,
-  IcUserDisplayName reporterName)
+  IdName reporterName)
 {
   /**
    * The short summary of a ticket.
    *
-   * @param projectId        The project ID
    * @param projectShortName The project short name
    * @param projectTitle     The project title
    * @param reporter         The ID of the reporter
@@ -61,7 +60,6 @@ public record IcTicketSummary(
 
   public IcTicketSummary
   {
-    Objects.requireNonNull(projectId, "projectId");
     Objects.requireNonNull(projectShortName, "projectShortName");
     Objects.requireNonNull(projectTitle, "projectTitle");
     Objects.requireNonNull(reporter, "reporter");

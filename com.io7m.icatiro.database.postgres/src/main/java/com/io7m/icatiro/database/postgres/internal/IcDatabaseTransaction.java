@@ -18,21 +18,21 @@ package com.io7m.icatiro.database.postgres.internal;
 
 import com.io7m.icatiro.database.api.IcDatabaseAuditQueriesType;
 import com.io7m.icatiro.database.api.IcDatabaseException;
-import com.io7m.icatiro.database.api.IcDatabasePermissionsQueriesType;
 import com.io7m.icatiro.database.api.IcDatabaseProjectsQueriesType;
 import com.io7m.icatiro.database.api.IcDatabaseQueriesType;
 import com.io7m.icatiro.database.api.IcDatabaseRole;
 import com.io7m.icatiro.database.api.IcDatabaseTicketsQueriesType;
 import com.io7m.icatiro.database.api.IcDatabaseTransactionType;
 import com.io7m.icatiro.database.api.IcDatabaseUsersQueriesType;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
 import java.sql.SQLException;
 import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -42,23 +42,55 @@ import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.SQL_ERROR;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.SQL_ERROR_UNSUPPORTED_QUERY_CLASS;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.USER_NONEXISTENT;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.USER_UNSET;
+import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_SYSTEM;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DbSystemValues.POSTGRESQL;
 import static org.jooq.SQLDialect.POSTGRES;
 
 final class IcDatabaseTransaction
   implements IcDatabaseTransactionType
 {
   private final IcDatabaseConnection connection;
-  private Instant timeStart;
+  private final Span transactionSpan;
   private UUID currentUserId;
+  private UUID currentAdminId;
 
   IcDatabaseTransaction(
     final IcDatabaseConnection inConnection,
-    final Instant inTimeStart)
+    final Span inTransactionScope)
   {
     this.connection =
       Objects.requireNonNull(inConnection, "connection");
-    this.timeStart =
-      Objects.requireNonNull(inTimeStart, "timeStart");
+    this.transactionSpan =
+      Objects.requireNonNull(inTransactionScope, "inMetricsScope");
+  }
+
+  /**
+   * @return The transaction span for metrics
+   */
+
+  public Span span()
+  {
+    return this.transactionSpan;
+  }
+
+  /**
+   * Create a new query span for measuring query times.
+   *
+   * @param name The query name
+   *
+   * @return The query span
+   */
+
+  public Span createQuerySpan(
+    final String name)
+  {
+    return this.tracer()
+      .spanBuilder(name)
+      .setParent(Context.current().with(this.transactionSpan))
+      .setAttribute(DB_SYSTEM, POSTGRESQL)
+      .setSpanKind(INTERNAL)
+      .startSpan();
   }
 
   void setRole(
@@ -103,14 +135,22 @@ final class IcDatabaseTransaction
     if (Objects.equals(qClass, IcDatabaseProjectsQueriesType.class)) {
       return qClass.cast(new IcDatabaseProjectsQueries(this));
     }
-    if (Objects.equals(qClass, IcDatabasePermissionsQueriesType.class)) {
-      return qClass.cast(new IcDatabasePermissionsQueries(this));
-    }
 
     throw new IcDatabaseException(
       "Unsupported query type: %s".formatted(qClass),
       SQL_ERROR_UNSUPPORTED_QUERY_CLASS
     );
+  }
+
+  @Override
+  public void rollback()
+    throws IcDatabaseException
+  {
+    try {
+      this.connection.connection().rollback();
+    } catch (final SQLException e) {
+      throw new IcDatabaseException(e.getMessage(), e, SQL_ERROR);
+    }
   }
 
   public DSLContext createContext()
@@ -128,53 +168,28 @@ final class IcDatabaseTransaction
   }
 
   @Override
-  public void rollback()
-    throws IcDatabaseException
-  {
-    try {
-      this.connection.connection().rollback();
-      this.connection.database()
-        .metrics()
-        .addTransactionTimeRolledBack(this.updateTransactionTime());
-    } catch (final SQLException e) {
-      throw new IcDatabaseException(e.getMessage(), e, SQL_ERROR);
-    }
-  }
-
-  @Override
   public void commit()
     throws IcDatabaseException
   {
     try {
       this.connection.connection().commit();
-      this.connection.database()
-        .metrics()
-        .addTransactionTimeCommitted(this.updateTransactionTime());
     } catch (final SQLException e) {
       throw new IcDatabaseException(e.getMessage(), e, SQL_ERROR);
     }
-  }
-
-  private double updateTransactionTime()
-  {
-    final var timeNow =
-      this.connection.database()
-        .clock()
-        .instant();
-    final var diff =
-      Duration.between(this.timeStart, timeNow);
-    final var timeMs =
-      (double) diff.toMillis() / 1000.0;
-
-    this.timeStart = timeNow;
-    return timeMs;
   }
 
   @Override
   public void close()
     throws IcDatabaseException
   {
-    this.rollback();
+    try {
+      this.rollback();
+    } catch (final Exception e) {
+      this.transactionSpan.recordException(e);
+      throw e;
+    } finally {
+      this.transactionSpan.end();
+    }
   }
 
   @Override
@@ -217,5 +232,14 @@ final class IcDatabaseTransaction
         USER_UNSET
       );
     });
+  }
+
+  /**
+   * @return The metrics tracer
+   */
+
+  public Tracer tracer()
+  {
+    return this.connection.database().tracer();
   }
 }

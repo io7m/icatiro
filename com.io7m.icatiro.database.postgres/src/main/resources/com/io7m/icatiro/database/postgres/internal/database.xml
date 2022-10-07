@@ -43,19 +43,58 @@ create table schema_version (
 
     <Statement><![CDATA[
 create table users (
-  id               uuid                     not null primary key,
-  name             varchar(1000000)         not null unique,
-  email            varchar(1000000)         not null unique,
-  created          timestamp with time zone not null,
-  last_login_time  timestamp with time zone not null,
-  password_algo    varchar(1000000)         not null,
-  password_hash    varchar(1000000)         not null,
-  password_salt    varchar(1000000)         not null
+  id      uuid             not null primary key,
+  name    varchar(1000000) not null,
+  initial boolean          not null
 )
 ]]></Statement>
 
     <Statement>grant select, insert, update on users to icatiro</Statement>
     <Statement>grant select (id) on users to icatiro_none</Statement>
+
+    <Statement><![CDATA[
+create function user_initial_check() returns trigger as $$
+  declare
+    count integer;
+  begin
+    if old.initial = false and new.initial = true then
+      select count(*) into count from users a where a.initial = true;
+      if count >= 1 then
+        raise sqlstate 'IC003' using message = 'Only one user can be the initial admin.';
+        return null;
+      end if;
+    end if;
+    return old;
+  end;
+$$ language plpgsql;
+]]></Statement>
+
+    <Statement><![CDATA[
+create trigger user_initial_check_insert
+  before insert on users
+    for each statement
+      execute function user_initial_check();
+]]></Statement>
+
+    <Statement><![CDATA[
+create trigger user_initial_check_update
+  before update on users
+    for each statement
+      execute function user_initial_check();
+]]></Statement>
+
+    <Comment>The emails table stores the set of email addresses used by users.</Comment>
+
+    <Statement><![CDATA[
+create table emails (
+  user_id         uuid,
+  email_address   varchar(1000000) not null unique,
+
+  foreign key (user_id) references users (id)
+)
+]]></Statement>
+
+    <Statement>grant select, insert, delete on emails to icatiro</Statement>
 
     <Comment>
       The audit table stores a list of auditable events. Who did it? What did they do? When did they do it?
@@ -114,24 +153,19 @@ create table tickets (
 
     <Comment>
       The permissions table stores the set of permissions held by a user. If scope_project is non-null, then the
-      permission applies to all objects within a project. If scope_ticket is non-null, then the permission applies to
-      the specified ticket. If scope_project and scope_ticket are both null, then the permission applies globally. It is
-      an error for both values to be non-null. The permission values are integer enumeration values specified in
-      com.io7m.icatiro.model.IcPermission.
+      permission applies to all objects within a project. If scope_ticket is also non-null, then the permission
+      applies to the specified ticket. If scope_project and scope_ticket are both null, then the permission applies
+      globally.
+
+      The permission values are integer enumeration values specified in com.io7m.icatiro.model.IcPermission.
     </Comment>
 
     <Statement><![CDATA[
 create table permissions (
-  user_id        uuid    not null,
+  user_id        uuid not null,
   scope_project  bigint,
   scope_ticket   bigint,
   permission     integer not null,
-
-  constraint scope_project_or_ticket check (
-    case when scope_project is not null then
-      (scope_ticket is null)
-    end
-  ),
 
   unique (user_id, scope_project, scope_ticket, permission),
 
@@ -141,57 +175,91 @@ create table permissions (
 )
 ]]></Statement>
 
+    <Statement><![CDATA[
+create function permissions_ticket_check() returns trigger as $$
+  declare
+    r_project bigint;
+    r_ticket bigint;
+  begin
+    if new.scope_ticket is not null then
+      if new.scope_project is null then
+        raise sqlstate 'IC001' using message = 'If ticket ID is non-null, then project ID must be non-null';
+      end if;
+
+      select t.project into r_project from tickets t where t.project = new.scope_project and t.id = r_ticket;
+      if r_project is null then
+        raise sqlstate 'IC002' using message = 'Ticket must belong to project';
+      end if;
+    end if;
+    return new;
+  end;
+$$ language plpgsql;
+]]></Statement>
+
+    <Statement><![CDATA[
+create trigger permissions_ticket_check_trigger
+  before insert on permissions
+    for each statement
+      execute function permissions_ticket_check();
+]]></Statement>
+
     <Statement>grant insert, select, delete on permissions to icatiro</Statement>
 
     <Statement><![CDATA[
 create function permission_is_allowed_globally (
-  user_id    uuid,
-  permission integer
-) returns boolean
-  language sql
-  stable
-  strict
-  return exists (
-    select p.permission from permissions p
-      where p.user_id = user_id
-        and p.permission = permission
+  p_user_id    uuid,
+  p_permission integer
+) returns boolean as $$
+  declare
+    c bigint;
+  begin
+    select count(*) into c from permissions p
+      where p.user_id       = p_user_id
+        and p.permission    = p_permission
         and p.scope_project is null
-        and p.scope_ticket is null
-  );
+        and p.scope_ticket  is null;
+    return c > 0;
+  end;
+$$ language plpgsql;
 ]]></Statement>
 
     <Statement><![CDATA[
 create function permission_is_allowed_projectwide (
-  user_id    uuid,
-  project    bigint,
-  permission integer
-) returns boolean
-  language sql
-  stable
-  strict
-  return exists (
-    select p.permission from permissions p
-      where p.user_id = user_id
-        and p.permission = permission
-        and p.scope_project = project
-  );
+  p_user_id    uuid,
+  p_project    bigint,
+  p_permission integer
+) returns boolean as $$
+  declare
+    c bigint;
+  begin
+    select count(*) into c from permissions p
+      where p.user_id       = p_user_id
+        and p.permission    = p_permission
+        and p.scope_project = p_project
+        and p.scope_ticket  is null;
+    return c > 0;
+  end;
+$$ language plpgsql;
 ]]></Statement>
 
     <Statement><![CDATA[
 create function permission_is_allowed_ticketwide (
-  user_id    uuid,
-  ticket     bigint,
-  permission integer
-) returns boolean
-  language sql
-  stable
-  strict
-  return exists (
-    select p.permission from permissions p
-      where p.user_id = user_id
-        and p.permission = permission
-        and p.scope_ticket = ticket
-  );
+  p_user_id    uuid,
+  p_project    bigint,
+  p_ticket     bigint,
+  p_permission integer
+) returns boolean as $$
+  declare
+    c bigint;
+  begin
+    select count(*) into c from permissions p
+      where p.user_id       = p_user_id
+        and p.permission    = p_permission
+        and p.scope_project = p_project
+        and p.scope_ticket  = p_ticket;
+    return c > 0;
+  end;
+$$ language plpgsql;
 ]]></Statement>
 
     <Statement><![CDATA[
@@ -202,12 +270,11 @@ create function permission_is_allowed (
   permission integer
 ) returns boolean
   language sql
-  stable
   strict
   return (
     select permission_is_allowed_globally (user_id, permission)
       or permission_is_allowed_projectwide (user_id, project, permission)
-      or permission_is_allowed_ticketwide (user_id, ticket, permission)
+      or permission_is_allowed_ticketwide (user_id, project, ticket, permission)
   )
 ]]></Statement>
   </Schema>

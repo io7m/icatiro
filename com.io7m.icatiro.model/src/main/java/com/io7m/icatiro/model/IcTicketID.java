@@ -16,25 +16,55 @@
 
 package com.io7m.icatiro.model;
 
+import java.util.Objects;
+
 /**
  * The unique ID of a ticket.
  *
- * @param value The value
+ * @param project The project ID
+ * @param value   The value
  */
 
-public record IcTicketID(long value)
-  implements Comparable<IcTicketID>
+public record IcTicketID(
+  IcProjectID project,
+  long value)
+  implements Comparable<IcTicketID>, IcAccessControlledType
 {
+  /**
+   * The unique ID of a ticket.
+   *
+   * @param project The project ID
+   * @param value   The value
+   */
+
+  public IcTicketID
+  {
+    Objects.requireNonNull(project, "project");
+  }
+
   @Override
   public String toString()
   {
-    return Long.toUnsignedString(this.value);
+    return "%s-%s".formatted(
+      this.project.toString(),
+      Long.toUnsignedString(this.value)
+    );
   }
 
   @Override
   public int compareTo(
     final IcTicketID other)
   {
-    return Long.compareUnsigned(this.value, other.value);
+    final var pcmp = this.project.compareTo(other.project);
+    if (pcmp == 0) {
+      return Long.compareUnsigned(this.value, other.value);
+    }
+    return pcmp;
+  }
+
+  @Override
+  public String objectType()
+  {
+    return "ticket";
   }
 }

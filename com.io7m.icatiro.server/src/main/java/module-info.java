@@ -14,6 +14,8 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+import com.io7m.idstore.user_client.api.IdUClientFactoryType;
+
 /**
  * The server implementation.
  */
@@ -26,14 +28,17 @@ module com.io7m.icatiro.server
   requires transitive com.io7m.icatiro.server.api;
 
   requires com.io7m.icatiro.services.api;
-  requires com.io7m.icatiro.protocol.api;
-  requires com.io7m.icatiro.protocol.versions;
-  requires com.io7m.icatiro.protocol.api_v1;
+  requires com.io7m.icatiro.protocol;
+  requires com.io7m.icatiro.protocol.tickets;
+  requires com.io7m.icatiro.protocol.tickets.cb;
 
   requires ch.qos.logback.classic;
   requires ch.qos.logback.core;
   requires com.fasterxml.jackson.databind;
+  requires com.io7m.idstore.user_client.api;
+  requires com.io7m.idstore.user_client;
   requires com.io7m.jmulticlose.core;
+  requires com.io7m.jvindicator.core;
   requires com.io7m.jxtrand.vanilla;
   requires freemarker;
   requires java.desktop;
@@ -42,6 +47,20 @@ module com.io7m.icatiro.server
   requires org.eclipse.jetty.jmx;
   requires org.eclipse.jetty.server;
   requires org.eclipse.jetty.servlet;
+
+  requires io.opentelemetry.api;
+  requires io.opentelemetry.context;
+  requires io.opentelemetry.exporter.otlp;
+  requires io.opentelemetry.sdk.common;
+  requires io.opentelemetry.sdk.metrics;
+  requires io.opentelemetry.sdk.trace;
+  requires io.opentelemetry.sdk;
+  requires io.opentelemetry.semconv;
+  requires com.io7m.cxbutton.core;
+  requires com.io7m.verdant.core;
+  requires com.io7m.verdant.core.cb;
+
+  uses IdUClientFactoryType;
 
   opens com.io7m.icatiro.server.internal
     to com.io7m.jxtrand.vanilla;

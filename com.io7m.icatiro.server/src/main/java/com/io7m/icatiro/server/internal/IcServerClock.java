@@ -71,6 +71,6 @@ public final class IcServerClock implements IcServiceType
   public String toString()
   {
     return "[IcServerClock 0x%s]"
-      .formatted(Long.toUnsignedString(this.hashCode()));
+      .formatted(Long.toUnsignedString(this.hashCode(), 16));
   }
 }

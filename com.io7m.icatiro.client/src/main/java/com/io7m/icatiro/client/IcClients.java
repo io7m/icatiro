@@ -62,9 +62,10 @@ public final class IcClients implements IcClientFactoryType
         .build();
 
     return new IcClient(
+      locale,
       strings,
       httpClient,
-      new IcClientProtocolHandlerDisconnected(strings, httpClient)
+      new IcClientProtocolHandlerDisconnected(locale, strings, httpClient)
     );
   }
 }

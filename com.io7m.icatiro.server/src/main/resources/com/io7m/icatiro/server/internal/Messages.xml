@@ -3,7 +3,10 @@
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 
 <properties>
+  <entry key="productTitle">icatiro</entry>
   <entry key="errorInvalidUsernamePassword">Invalid username or password.</entry>
+  <entry key="errorIdentityServerConnect">Failed to connect to identity server.</entry>
+  <entry key="errorReported">This error has been reported to the administrators. Please try again later.</entry>
   <entry key="operationNotPermitted">Operation not permitted.</entry>
   <entry key="unauthorized">Unauthorized.</entry>
   <entry key="methodNotAllowed">HTTP method not allowed.</entry>
@@ -14,4 +17,6 @@
   <entry key="missingParameter">Missing a required query parameter "{0}"</entry>
   <entry key="invalidParameter">Invalid value for query parameter "{0}"</entry>
   <entry key="notFound">Not found.</entry>
+  <entry key="errorPermissionsRequired">You do not have the required {0} permission for {1} {2}</entry>
+  <entry key="errorPermissionGrant">You must have the permission {0} in order to grant it.</entry>
 </properties>

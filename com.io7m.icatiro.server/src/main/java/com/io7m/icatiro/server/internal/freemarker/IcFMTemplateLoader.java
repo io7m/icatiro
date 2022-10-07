@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.file.NoSuchFileException;
+import java.util.Set;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -42,6 +43,24 @@ public final class IcFMTemplateLoader implements TemplateLoader
 
   }
 
+  private static Reader load(
+    final String name)
+    throws IOException
+  {
+    final var path =
+      "/com/io7m/icatiro/server/internal/%s.ftlx".formatted(name);
+
+    final var url =
+      IcFMTemplateLoader.class.getResource(path);
+
+    if (url == null) {
+      throw new NoSuchFileException(path);
+    }
+
+    final var stream = url.openStream();
+    return new BufferedReader(new InputStreamReader(stream, UTF_8));
+  }
+
   @Override
   public Object findTemplateSource(
     final String name)
@@ -56,6 +75,13 @@ public final class IcFMTemplateLoader implements TemplateLoader
     return 0L;
   }
 
+  private static final Set<String> TEMPLATES = Set.of(
+    "mainCss",
+    "pageLogin",
+    "pageMessage",
+    "pageTicketList"
+  );
+
   @Override
   public Reader getReader(
     final Object templateSource,
@@ -63,35 +89,16 @@ public final class IcFMTemplateLoader implements TemplateLoader
     throws IOException
   {
     if (templateSource instanceof String name) {
-      if (name.startsWith("login")) {
-        return load("login");
-      }
-      if (name.startsWith("ticketList")) {
-        return load("ticketList");
+      for (final var known : TEMPLATES) {
+        if (name.startsWith("%s_".formatted(known))) {
+          return load(known);
+        }
       }
     }
 
     throw new IOException(
       "No such template: %s".formatted(templateSource)
     );
-  }
-
-  private static Reader load(
-    final String name)
-    throws IOException
-  {
-    final var path =
-      "/com/io7m/icatiro/server/internal/%s.fthl".formatted(name);
-
-    final var url =
-      IcFMTemplateLoader.class.getResource(path);
-
-    if (url == null) {
-      throw new NoSuchFileException(path);
-    }
-
-    final var stream = url.openStream();
-    return new BufferedReader(new InputStreamReader(stream, UTF_8));
   }
 
   @Override

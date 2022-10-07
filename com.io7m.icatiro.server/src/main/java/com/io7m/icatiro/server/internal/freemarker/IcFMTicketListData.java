@@ -18,31 +18,47 @@ package com.io7m.icatiro.server.internal.freemarker;
 
 import com.io7m.icatiro.model.IcTicketSummary;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
  * Data for the ticket list screen.
  *
- * @param pageTitle The page title
- * @param tickets   The ticket list
+ * @param htmlTitle       The HTML title
+ * @param pageHeaderTitle The page header title
+ * @param tickets         The ticket list
  */
 
 public record IcFMTicketListData(
-  String pageTitle,
+  String htmlTitle,
+  String pageHeaderTitle,
   List<IcTicketSummary> tickets)
   implements IcFMDataModelType
 {
   /**
    * Data for the ticket list screen.
    *
-   * @param pageTitle The page title
-   * @param tickets   The ticket list
+   * @param htmlTitle       The HTML title
+   * @param pageHeaderTitle The page header title
+   * @param tickets         The ticket list
    */
 
   public IcFMTicketListData
   {
-    Objects.requireNonNull(pageTitle, "pageTitle");
+    Objects.requireNonNull(htmlTitle, "htmlTitle");
+    Objects.requireNonNull(pageHeaderTitle, "pageHeaderTitle");
     Objects.requireNonNull(tickets, "tickets");
+  }
+
+  @Override
+  public Map<String, Object> toTemplateHash()
+  {
+    final var m = new HashMap<String, Object>();
+    m.put("htmlTitle", this.htmlTitle());
+    m.put("pageHeaderTitle", this.pageHeaderTitle);
+    m.put("tickets", this.tickets());
+    return m;
   }
 }

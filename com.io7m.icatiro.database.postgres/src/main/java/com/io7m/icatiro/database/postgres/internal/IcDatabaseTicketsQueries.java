@@ -30,7 +30,7 @@ import com.io7m.icatiro.model.IcTicketOrdering;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTicketTitle;
 import com.io7m.icatiro.model.IcTimeRange;
-import com.io7m.icatiro.model.IcUserDisplayName;
+import com.io7m.idstore.model.IdName;
 import org.jooq.DSLContext;
 import org.jooq.OrderField;
 import org.jooq.SelectForUpdateStep;
@@ -106,15 +106,17 @@ final class IcDatabaseTicketsQueries
     final org.jooq.Record record)
   {
     return new IcTicketSummary(
-      new IcProjectID(record.get(TICKETS.PROJECT)),
       new IcProjectTitle(record.get(PROJECTS.NAME_DISPLAY)),
       new IcProjectShortName(record.get(PROJECTS.NAME_SHORT)),
-      new IcTicketID(record.get(TICKETS.ID)),
+      new IcTicketID(
+        new IcProjectID(record.get(TICKETS.PROJECT)),
+        record.get(TICKETS.ID)
+      ),
       new IcTicketTitle(record.get(TICKETS.TITLE)),
       record.get(TICKETS.TIME_CREATED),
       record.get(TICKETS.TIME_UPDATED),
       record.get(TICKETS.REPORTER),
-      new IcUserDisplayName(record.get(USERS.NAME))
+      new IdName(record.get(USERS.NAME))
     );
   }
 
@@ -154,9 +156,15 @@ final class IcDatabaseTicketsQueries
     final IcTicketCreation creation)
     throws IcDatabaseException
   {
-    final var transaction = this.transaction();
-    final var context = transaction.createContext();
-    final var userId = transaction.userId();
+    final var transaction =
+      this.transaction();
+    final var context =
+      transaction.createContext();
+    final var userId =
+      transaction.userId();
+    final var querySpan =
+      transaction.createQuerySpan(
+        "IdDatabaseTicketsQueries.ticketCreate");
 
     try {
       final var user =
@@ -186,18 +194,20 @@ final class IcDatabaseTicketsQueries
         .execute();
 
       return new IcTicketSummary(
-        new IcProjectID(project.getId().longValue()),
         new IcProjectTitle(project.getNameDisplay()),
         new IcProjectShortName(project.getNameShort()),
-        new IcTicketID(newId),
+        new IcTicketID(new IcProjectID(project.getId().longValue()), newId),
         new IcTicketTitle(newTicket.getTitle()),
         timeNow,
         timeNow,
         userId,
-        new IcUserDisplayName(user.getName())
+        new IdName(user.getName())
       );
     } catch (final DataAccessException e) {
+      querySpan.recordException(e);
       throw handleDatabaseException(transaction, e);
+    } finally {
+      querySpan.end();
     }
   }
 
@@ -217,8 +227,13 @@ final class IcDatabaseTicketsQueries
     Objects.requireNonNull(ordering, "ordering");
     Objects.requireNonNull(seek, "seek");
 
-    final var transaction = this.transaction();
-    final var context = transaction.createContext();
+    final var transaction =
+      this.transaction();
+    final var context =
+      transaction.createContext();
+    final var querySpan =
+      transaction.createQuerySpan(
+        "IdDatabaseTicketsQueries.ticketListWithPermissions");
 
     try {
       final var user =
@@ -295,7 +310,85 @@ final class IcDatabaseTicketsQueries
       return next.fetch()
         .map(IcDatabaseTicketsQueries::mapTicketWithPermissions);
     } catch (final DataAccessException e) {
+      querySpan.recordException(e);
       throw handleDatabaseException(transaction, e);
+    } finally {
+      querySpan.end();
+    }
+  }
+
+  @Override
+  public long ticketListCountWithPermissions(
+    final UUID userId,
+    final IcTimeRange timeCreatedRange,
+    final IcTimeRange timeUpdatedRange)
+    throws IcDatabaseException
+  {
+    Objects.requireNonNull(userId, "userId");
+    Objects.requireNonNull(timeCreatedRange, "timeCreatedRange");
+    Objects.requireNonNull(timeUpdatedRange, "timeUpdatedRange");
+
+    final var transaction =
+      this.transaction();
+    final var context =
+      transaction.createContext();
+    final var querySpan =
+      transaction.createQuerySpan(
+        "IdDatabaseTicketsQueries.ticketListCountWithPermissions");
+
+    try {
+      context.fetchOptional(USERS, USERS.ID.eq(userId))
+        .orElseThrow(USER_DOES_NOT_EXIST);
+
+      final var baseSelection =
+        context.selectCount()
+          .from(
+            TICKETS
+              .join(PROJECTS).on(PROJECTS.ID.eq(TICKETS.PROJECT))
+              .join(USERS).on(USERS.ID.eq(TICKETS.REPORTER))
+          );
+
+      /*
+       * The permission condition is responsible for filtering out
+       * tickets with which the user has no permission to read.
+       */
+
+      final var permissionCondition =
+        DSL.condition(
+          "permission_is_allowed(?, TICKETS.PROJECT, TICKETS.ID, ?)",
+          userId,
+          Integer.valueOf(TICKET_READ.value())
+        );
+
+      /*
+       * The tickets must lie within the given time ranges.
+       */
+
+      final var timeCreatedCondition =
+        DSL.condition(
+          TICKETS.TIME_CREATED.ge(timeCreatedRange.timeLower())
+            .and(TICKETS.TIME_CREATED.le(timeCreatedRange.timeUpper()))
+        );
+
+      final var timeUpdatedCondition =
+        DSL.condition(
+          TICKETS.TIME_UPDATED.ge(timeCreatedRange.timeLower())
+            .and(TICKETS.TIME_UPDATED.le(timeCreatedRange.timeUpper()))
+        );
+
+      final var allConditions =
+        permissionCondition
+          .and(timeCreatedCondition)
+          .and(timeUpdatedCondition);
+
+      return baseSelection.where(allConditions)
+        .fetchOneInto(int.class)
+        .longValue();
+    } catch (final DataAccessException e) {
+      querySpan.recordException(e);
+      throw handleDatabaseException(transaction, e);
+    } finally {
+      querySpan.end();
     }
   }
 }

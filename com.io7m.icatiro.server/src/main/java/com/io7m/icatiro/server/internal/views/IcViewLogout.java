@@ -17,10 +17,10 @@
 
 package com.io7m.icatiro.server.internal.views;
 
-import com.io7m.icatiro.server.internal.IcServerUserControllersService;
+import com.io7m.icatiro.server.internal.IcUserSessionService;
+import com.io7m.icatiro.server.internal.common.IcCommonInstrumentedServlet;
 import com.io7m.icatiro.services.api.IcServiceDirectoryType;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -31,9 +31,9 @@ import java.util.UUID;
  * Log out.
  */
 
-public final class IcViewLogout extends HttpServlet
+public final class IcViewLogout extends IcCommonInstrumentedServlet
 {
-  private final IcServerUserControllersService controllers;
+  private final IcUserSessionService userSessions;
 
   /**
    * Log out.
@@ -44,8 +44,10 @@ public final class IcViewLogout extends HttpServlet
   public IcViewLogout(
     final IcServiceDirectoryType inServices)
   {
-    this.controllers =
-      inServices.requireService(IcServerUserControllersService.class);
+    super(inServices);
+
+    this.userSessions =
+      inServices.requireService(IcUserSessionService.class);
   }
 
   @Override
@@ -59,7 +61,7 @@ public final class IcViewLogout extends HttpServlet
       try {
         final var userId = (UUID) session.getAttribute("UserID");
         if (userId != null) {
-          this.controllers.delete(userId, session.getId());
+          this.userSessions.delete(userId, session.getId());
         }
       } catch (final Exception e) {
         // Don't care

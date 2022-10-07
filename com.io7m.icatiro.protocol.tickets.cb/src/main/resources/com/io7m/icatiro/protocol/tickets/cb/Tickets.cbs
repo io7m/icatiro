@@ -1,0 +1,331 @@
+;
+; Copyright © 2022 Mark Raynsford <code@io7m.com> https://www.io7m.com
+;
+; Permission to use, copy, modify, and/or distribute this software for any
+; purpose with or without fee is hereby granted, provided that the above
+; copyright notice and this permission notice appear in all copies.
+;
+; THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+; WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+; MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+; SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+; WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+; IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+;
+
+[language cedarbridge 1 0]
+
+[package com.io7m.icatiro.protocol.tickets.cb]
+
+[import com.io7m.cedarbridge cb]
+
+[documentation Ic1UUID "A 128-bit UUID value."]
+[record Ic1UUID
+  [documentation msb "The most significant bits of the UUID."]
+  [field msb cb:IntegerUnsigned64]
+  [documentation lsb "The least significant bits of the UUID."]
+  [field lsb cb:IntegerUnsigned64]
+]
+
+[documentation Ic1TimestampUTC "A UTC timestamp value."]
+[record Ic1TimestampUTC
+  [documentation year "The year."]
+  [field year cb:IntegerUnsigned32]
+  [documentation month "The month in the range [1, 12]."]
+  [field month cb:IntegerUnsigned8]
+  [documentation day "The day of the month in the range [1, 31]."]
+  [field day cb:IntegerUnsigned8]
+  [documentation hour "The hour in the range [0, 23]."]
+  [field hour cb:IntegerUnsigned8]
+  [documentation minute "The minute in the range [0, 59]."]
+  [field minute cb:IntegerUnsigned8]
+  [documentation second "The second in the range [0, 59]."]
+  [field second cb:IntegerUnsigned8]
+  [documentation millisecond "The millisecond in the range [0, 999]."]
+  [field millisecond cb:IntegerUnsigned32]
+]
+
+[documentation Ic1TimeRange "A UTC time range."]
+[record Ic1TimeRange
+  [documentation lower "The lower bound."]
+  [field lower Ic1TimestampUTC]
+  [documentation upper "The upper bound."]
+  [field upper Ic1TimestampUTC]
+]
+
+[documentation Ic1Page "A page of results."]
+[record Ic1Page
+  [documentation T "The type of result values."]
+  [parameter T]
+  [documentation items "The list of results."]
+  [field items [cb:List T]]
+  [documentation pageIndex "The page index."]
+  [field pageIndex cb:IntegerUnsigned32]
+  [documentation pageCount "The page count."]
+  [field pageCount cb:IntegerUnsigned32]
+  [documentation pageFirstOffset "The offset of the first item in the page."]
+  [field pageFirstOffset cb:IntegerUnsigned64]
+]
+
+[documentation Ic1Permission "A permission."]
+[variant Ic1Permission
+  [documentation TicketRead "A ticket can be read."]
+  [case TicketRead]
+  [documentation TicketCreate "A ticket can be created."]
+  [case TicketCreate]
+  [documentation TicketWrite "A ticket can be written."]
+  [case TicketWrite]
+  [documentation ProjectCreate "A project can be created."]
+  [case ProjectCreate]
+]
+
+[documentation Ic1TicketID "The unique identifier for a ticket."]
+[record Ic1TicketID
+  [documentation project "The project ID."]
+  [field project cb:IntegerUnsigned64]
+  [documentation ticket "The ticket ID."]
+  [field ticket cb:IntegerUnsigned64]
+]
+
+[documentation Ic1PermissionScoped "A scoped permission."]
+[variant Ic1PermissionScoped
+  [documentation Global "A globally scoped permission."]
+  [case Global
+    [documentation permission "The permission."]
+    [field permission Ic1Permission]
+  ]
+  [documentation Projectwide "A project-scoped permission."]
+  [case Projectwide
+    [documentation project "The project ID."]
+    [field project cb:IntegerUnsigned64]
+    [documentation permission "The permission."]
+    [field permission Ic1Permission]
+  ]
+  [documentation Ticketwide "A ticket-scoped permission."]
+  [case Ticketwide
+    [documentation ticket "The ticket ID."]
+    [field ticket Ic1TicketID]
+    [documentation permission "The permission."]
+    [field permission Ic1Permission]
+  ]
+]
+
+[documentation Ic1User "A user."]
+[record Ic1User
+  [documentation id "The user ID."]
+  [field id Ic1UUID]
+  [documentation idName "The user ID name."]
+  [field idName cb:String]
+  [documentation emails "The user emails."]
+  [field emails [cb:List cb:String]]
+  [documentation permissions "The permissions."]
+  [field permissions [cb:List Ic1PermissionScoped]]
+]
+
+[documentation Ic1TicketSummary "A ticket summary."]
+[record Ic1TicketSummary
+  [documentation projectTitle "The project title."]
+  [field projectTitle cb:String]
+  [documentation projectShortName "The project short name."]
+  [field projectShortName cb:String]
+  [documentation ticketId "The ticket ID."]
+  [field ticketId Ic1TicketID]
+  [documentation ticketTitle "The ticket title."]
+  [field ticketTitle cb:String]
+  [documentation timeCreated "The ticket creation time."]
+  [field timeCreated Ic1TimestampUTC]
+  [documentation timeUpdated "The ticket update time."]
+  [field timeUpdated Ic1TimestampUTC]
+  [documentation reporter "The ticket reporter."]
+  [field reporter Ic1UUID]
+  [documentation reporterName "The ticket reporter name."]
+  [field reporterName cb:String]
+]
+
+[documentation Ic1TicketColumn "A column to use for sorting tickets."]
+[variant Ic1TicketColumn
+  [documentation ByID "Order by ticket ID."]
+  [case ByID]
+  [documentation ByTitle "Order by title."]
+  [case ByTitle]
+  [documentation ByTimeCreated "Order by ticket creation time."]
+  [case ByTimeCreated]
+  [documentation ByTimeUpdated "Order by ticket update time."]
+  [case ByTimeUpdated]
+]
+
+[documentation Ic1TicketColumnOrdering "A column ordering spec."]
+[record Ic1TicketColumnOrdering
+  [documentation column "The ticket column."]
+  [field column Ic1TicketColumn]
+  [documentation ascending "True if the results should be ascending."]
+  [field ascending cb:Boolean]
+]
+
+[documentation Ic1TicketOrdering "A set of column ordering specs."]
+[record Ic1TicketOrdering
+  [documentation columns "The column orders."]
+  [field columns [cb:List Ic1TicketColumnOrdering]]
+]
+
+[documentation Ic1TicketSearchParameters "Search parameters for tickets."]
+[record Ic1TicketSearchParameters
+  [documentation timeCreatedRange "The range of creation times for returned tickets."]
+  [field timeCreatedRange Ic1TimeRange]
+  [documentation timeUpdatedRange "The range of update times for returned tickets."]
+  [field timeUpdatedRange Ic1TimeRange]
+  [documentation ordering "The result ordering."]
+  [field ordering Ic1TicketOrdering]
+  [documentation limit "The limit on the number of results."]
+  [field limit cb:IntegerUnsigned16]
+]
+
+[documentation Ic1Project "A project."]
+[record Ic1Project
+  [documentation id "The project ID."]
+  [field id cb:IntegerUnsigned64]
+  [documentation shortName "The project short name."]
+  [field shortName cb:String]
+  [documentation title "The project title."]
+  [field title cb:String]
+]
+
+;
+; Commands.
+;
+
+[documentation Ic1CommandLogin "A request to log in."]
+[record Ic1CommandLogin
+  [documentation userName "The username."]
+  [field userName cb:String]
+  [documentation password "The password."]
+  [field password cb:String]
+]
+
+[documentation Ic1CommandProjectCreate "A request to create a project."]
+[record Ic1CommandProjectCreate
+  [documentation shortName "The project short name."]
+  [field shortName cb:String]
+  [documentation title "The project title."]
+  [field title cb:String]
+]
+
+[documentation Ic1CommandTicketSearchBegin "Start searching for tickets."]
+[record Ic1CommandTicketSearchBegin
+  [documentation parameters "The search parameters."]
+  [field parameters Ic1TicketSearchParameters]
+]
+
+[documentation Ic1CommandTicketSearchNext "Get the next page of ticket search results."]
+[record Ic1CommandTicketSearchNext]
+
+[documentation Ic1CommandTicketSearchPrevious "Get the previous page of ticket search results."]
+[record Ic1CommandTicketSearchPrevious]
+
+[documentation Ic1CommandTicketCreate "A request to create a project."]
+[record Ic1CommandTicketCreate
+  [documentation project "The project ID."]
+  [field project cb:IntegerUnsigned64]
+  [documentation title "The ticket title."]
+  [field title cb:String]
+]
+
+[documentation Ic1CommandPermissionGrant "A request to grant a permission."]
+[record Ic1CommandPermissionGrant
+  [documentation targetUser "The target user."]
+  [field targetUser Ic1UUID]
+  [documentation permission "The permission."]
+  [field permission Ic1PermissionScoped]
+]
+
+;
+; Responses.
+;
+
+[documentation Ic1ResponseError "An error response."]
+[record Ic1ResponseError
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation errorCode "The error code."]
+  [field errorCode cb:String]
+  [documentation message "The error message."]
+  [field message cb:String]
+]
+
+[documentation Ic1ResponseLogin "A response to Ic1CommandLogin."]
+[record Ic1ResponseLogin
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation user "The current user."]
+  [field user Ic1User]
+]
+
+[documentation Ic1ResponseTicketSearchBegin "A response to Ic1CommandTicketSearchBegin."]
+[record Ic1ResponseTicketSearchBegin
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation page "The first page of results."]
+  [field page [Ic1Page Ic1TicketSummary]]
+]
+
+[documentation Ic1ResponseTicketSearchNext "A response to Ic1CommandTicketSearchNext."]
+[record Ic1ResponseTicketSearchNext
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation page "The next page of results."]
+  [field page [Ic1Page Ic1TicketSummary]]
+]
+
+[documentation Ic1ResponseTicketSearchPrevious "A response to Ic1CommandTicketSearchPrevious."]
+[record Ic1ResponseTicketSearchPrevious
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation page "The previous page of results."]
+  [field page [Ic1Page Ic1TicketSummary]]
+]
+
+[documentation Ic1ResponseProjectCreate "A response to Ic1CommandProjectCreate."]
+[record Ic1ResponseProjectCreate
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation project "The project."]
+  [field project Ic1Project]
+]
+
+[documentation Ic1ResponseTicketCreate "A response to Ic1CommandTicketCreate."]
+[record Ic1ResponseTicketCreate
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation ticket "The ticket."]
+  [field ticket Ic1TicketSummary]
+]
+
+[documentation Ic1ResponsePermissionGrant "A response to Ic1CommandPermissionGrant."]
+[record Ic1ResponsePermissionGrant
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+]
+
+[documentation Tickets "The tickets protocol."]
+[protocol Tickets
+  [version 1
+    [types-added
+      Ic1CommandLogin
+      Ic1CommandPermissionGrant
+      Ic1CommandProjectCreate
+      Ic1CommandTicketCreate
+      Ic1CommandTicketSearchBegin
+      Ic1CommandTicketSearchNext
+      Ic1CommandTicketSearchPrevious
+      Ic1ResponseError
+      Ic1ResponseLogin
+      Ic1ResponsePermissionGrant
+      Ic1ResponseProjectCreate
+      Ic1ResponseTicketCreate
+      Ic1ResponseTicketSearchBegin
+      Ic1ResponseTicketSearchNext
+      Ic1ResponseTicketSearchPrevious
+    ]
+  ]
+]

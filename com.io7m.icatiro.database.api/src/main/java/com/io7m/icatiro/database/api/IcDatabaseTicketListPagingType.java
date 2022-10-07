@@ -14,7 +14,6 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
 package com.io7m.icatiro.database.api;
 
 import com.io7m.icatiro.model.IcTicketListParameters;

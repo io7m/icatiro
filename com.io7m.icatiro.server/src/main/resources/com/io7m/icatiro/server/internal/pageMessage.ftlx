@@ -1,0 +1,50 @@
+[#ftl output_format="XHTML"]
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+  <meta http-equiv="content-type" content="application/xhtml+xml; charset=utf-8"/>
+  <link rel="stylesheet" type="text/css" href="/css/reset.css"/>
+  <link rel="stylesheet" type="text/css" href="/css/style.css"/>
+  <link rel="stylesheet" type="text/css" href="/css/cxbutton.css"/>
+  <title>${htmlTitle}</title>
+</head>
+<body>
+
+<div id="ic_main">
+  <div id="ic_header">
+    <span class="ic_logo">
+      <img src="/logo" width="16" height="16" class="ic_header_logo ic_logo"/> ${pageHeaderTitle}
+    </span>
+    <span class="ic_empty">&#x000A;</span>
+    <span class="ic_profile_links">
+      <a href="/logout">Log out</a>
+    </span>
+  </div>
+
+  <div id="ic_content">
+    <div class="ic_message_container">
+      [#if messageIsError]
+      <div class="ic_message_error">
+        <h3>${messageTitle}</h3>
+        <p>${message}</p>
+        [#if messageIsServerError]
+        <p>The administrators have been notified of this error.</p>
+        <p>Request ID: ${requestId}</p>
+        [/#if]
+
+        <div><a href="${returnTo}" class="cxbutton">Return</a></div>
+      </div>
+      [#else]
+      <div class="ic_message">
+        <h3>${messageTitle}</h3>
+        <p>${message}</p>
+
+        <div><a href="${returnTo}" class="cxbutton">Return</a></div>
+      </div>
+      [/#if]
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

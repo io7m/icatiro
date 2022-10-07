@@ -17,6 +17,8 @@
 
 package com.io7m.icatiro.server.internal.freemarker;
 
+import java.util.Map;
+
 /**
  * The base type of data models for templates.
  */
@@ -24,8 +26,8 @@ package com.io7m.icatiro.server.internal.freemarker;
 public interface IcFMDataModelType
 {
   /**
-   * @return The title appearing in the page's "title" element
+   * @return The data as a freemarker template hash
    */
 
-  String pageTitle();
+  Map<String, Object> toTemplateHash();
 }

@@ -20,6 +20,8 @@ import com.io7m.icatiro.database.api.IcDatabaseConnectionType;
 import com.io7m.icatiro.database.api.IcDatabaseException;
 import com.io7m.icatiro.database.api.IcDatabaseRole;
 import com.io7m.icatiro.database.api.IcDatabaseTransactionType;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -29,24 +31,30 @@ import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.SQL_ERROR;
 record IcDatabaseConnection(
   IcDatabase database,
   Connection connection,
-  IcDatabaseRole role)
+  IcDatabaseRole role,
+  Span connectionSpan)
   implements IcDatabaseConnectionType
 {
   @Override
   public IcDatabaseTransactionType openTransaction()
     throws IcDatabaseException
   {
+    final var transactionSpan =
+      this.database.tracer()
+        .spanBuilder("IcDatabaseTransaction")
+        .setParent(Context.current().with(this.connectionSpan))
+        .startSpan();
+
     try {
       final var t =
-        new IcDatabaseTransaction(
-          this,
-          this.database.clock().instant()
-        );
+        new IcDatabaseTransaction(this, transactionSpan);
 
       t.setRole(this.role);
       t.commit();
       return t;
     } catch (final SQLException e) {
+      transactionSpan.recordException(e);
+      transactionSpan.end();
       throw new IcDatabaseException(e.getMessage(), e, SQL_ERROR);
     }
   }
@@ -60,7 +68,10 @@ record IcDatabaseConnection(
         this.connection.close();
       }
     } catch (final SQLException e) {
+      this.connectionSpan.recordException(e);
       throw new IcDatabaseException(e.getMessage(), e, SQL_ERROR);
+    } finally {
+      this.connectionSpan.end();
     }
   }
 }

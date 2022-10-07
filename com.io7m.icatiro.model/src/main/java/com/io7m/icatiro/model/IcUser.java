@@ -16,47 +16,42 @@
 
 package com.io7m.icatiro.model;
 
-import java.time.OffsetDateTime;
+import com.io7m.idstore.model.IdEmail;
+import com.io7m.idstore.model.IdName;
+
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Information for a single user.
  *
- * @param id            The user's ID
- * @param name          The user's name
- * @param email         The user's email
- * @param password      The user's password
- * @param created       The date the user was created
- * @param lastLoginTime The date the user last logged in
+ * @param id          The user's ID
+ * @param name        The user's name
+ * @param emails      The user's emails
+ * @param permissions The user's permissions
  */
 
 public record IcUser(
   UUID id,
-  IcUserDisplayName name,
-  IcUserEmail email,
-  OffsetDateTime created,
-  OffsetDateTime lastLoginTime,
-  IcPassword password)
+  IdName name,
+  List<IdEmail> emails,
+  IcPermissionSet permissions)
 {
   /**
    * Information for a single user.
    *
-   * @param id            The user's ID
-   * @param name          The user's name
-   * @param email         The user's email
-   * @param password      The user's password
-   * @param created       The date the user was created
-   * @param lastLoginTime The date the user last logged in
+   * @param id          The user's ID
+   * @param name        The user's name
+   * @param emails      The user's emails
+   * @param permissions The user's permissions
    */
 
   public IcUser
   {
     Objects.requireNonNull(id, "id");
     Objects.requireNonNull(name, "name");
-    Objects.requireNonNull(email, "email");
-    Objects.requireNonNull(created, "created");
-    Objects.requireNonNull(lastLoginTime, "lastLoginTime");
-    Objects.requireNonNull(password, "password");
+    Objects.requireNonNull(emails, "emails");
+    Objects.requireNonNull(permissions, "permissions");
   }
 }

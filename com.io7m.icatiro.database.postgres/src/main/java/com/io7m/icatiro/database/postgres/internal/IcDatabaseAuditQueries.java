@@ -18,14 +18,17 @@ package com.io7m.icatiro.database.postgres.internal;
 
 import com.io7m.icatiro.database.api.IcDatabaseAuditQueriesType;
 import com.io7m.icatiro.database.api.IcDatabaseException;
-import com.io7m.icatiro.database.postgres.internal.tables.records.AuditRecord;
 import com.io7m.icatiro.model.IcAuditEvent;
-import com.io7m.icatiro.model.IcSubsetMatch;
+import com.io7m.icatiro.model.IcAuditSearchParameters;
+import org.jooq.Condition;
+import org.jooq.SelectForUpdateStep;
 import org.jooq.exception.DataAccessException;
+import org.jooq.impl.DSL;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.OptionalLong;
 import java.util.UUID;
 
 import static com.io7m.icatiro.database.postgres.internal.IcDatabaseExceptions.handleDatabaseException;
@@ -41,110 +44,201 @@ final class IcDatabaseAuditQueries
     super(inTransaction);
   }
 
-  private static IcAuditEvent toAuditEvent(
-    final AuditRecord record)
-  {
-    return new IcAuditEvent(
-      record.getId().longValue(),
-      record.getUserId(),
-      record.getTime(),
-      record.getType(),
-      record.getMessage()
-    );
-  }
-
   @Override
   public List<IcAuditEvent> auditEvents(
-    final OffsetDateTime fromInclusive,
-    final OffsetDateTime toInclusive,
-    final IcSubsetMatch<String> owner,
-    final IcSubsetMatch<String> type,
-    final IcSubsetMatch<String> message)
+    final IcAuditSearchParameters parameters,
+    final OptionalLong seek)
     throws IcDatabaseException
   {
-    Objects.requireNonNull(fromInclusive, "fromInclusive");
-    Objects.requireNonNull(toInclusive, "toInclusive");
-    Objects.requireNonNull(owner, "owner");
-    Objects.requireNonNull(type, "type");
-    Objects.requireNonNull(message, "message");
+    Objects.requireNonNull(parameters, "parameters");
+    Objects.requireNonNull(seek, "seek");
 
-    try (var transaction = this.transaction()) {
-      final var context = transaction.createContext();
-      try {
-        var selection =
-          context.selectFrom(AUDIT)
-            .where(AUDIT.TIME.ge(fromInclusive))
-            .and(AUDIT.TIME.le(toInclusive));
+    final var transaction =
+      this.transaction();
+    final var context =
+      transaction.createContext();
+    final var querySpan =
+      transaction.createQuerySpan("IcDatabaseAuditQueries.auditEvents");
 
-        final var ownerInclude = owner.include();
-        if (!ownerInclude.isEmpty()) {
-          final var q = "%%%s%%".formatted(ownerInclude);
-          selection = selection.and(AUDIT.USER_ID.likeIgnoreCase(q));
-        }
-        final var ownerExclude = owner.exclude();
-        if (!ownerExclude.isEmpty()) {
-          final var q = "%%%s%%".formatted(ownerExclude);
-          selection = selection.andNot(AUDIT.USER_ID.likeIgnoreCase(q));
-        }
+    try {
+      final var baseSelection =
+        context.selectFrom(AUDIT);
 
-        final var typeInclude = type.include();
-        if (!typeInclude.isEmpty()) {
-          final var q = "%%%s%%".formatted(typeInclude);
-          selection = selection.and(AUDIT.TYPE.likeIgnoreCase(q));
-        }
-        final var typeExclude = type.exclude();
-        if (!typeExclude.isEmpty()) {
-          final var q = "%%%s%%".formatted(typeExclude);
-          selection = selection.andNot(AUDIT.TYPE.likeIgnoreCase(q));
-        }
+      /*
+       * The events must lie within the given time ranges.
+       */
 
-        final var messageInclude = message.include();
-        if (!messageInclude.isEmpty()) {
-          final var q = "%%%s%%".formatted(messageInclude);
-          selection = selection.and(AUDIT.MESSAGE.likeIgnoreCase(q));
-        }
-        final var messageExclude = message.exclude();
-        if (!messageExclude.isEmpty()) {
-          final var q = "%%%s%%".formatted(messageExclude);
-          selection = selection.andNot(AUDIT.MESSAGE.likeIgnoreCase(q));
-        }
+      final var timeCreatedCondition =
+        DSL.condition(
+          AUDIT.TIME.ge(parameters.timeRange().timeLower())
+            .and(AUDIT.TIME.le(parameters.timeRange().timeUpper()))
+        );
 
-        return selection.stream()
-          .map(IcDatabaseAuditQueries::toAuditEvent)
-          .toList();
-      } catch (final DataAccessException e) {
-        throw handleDatabaseException(transaction, e);
+      /*
+       * Search queries might be present.
+       */
+
+      Condition searchCondition = DSL.trueCondition();
+
+      final var typeOpt = parameters.type();
+      if (typeOpt.isPresent()) {
+        final var q = "%%%s%%".formatted(typeOpt.get());
+        searchCondition =
+          searchCondition.and(DSL.condition(AUDIT.TYPE.likeIgnoreCase(q)));
       }
+
+      final var ownerOpt = parameters.owner();
+      if (ownerOpt.isPresent()) {
+        final var q = "%%%s%%".formatted(ownerOpt.get());
+        searchCondition =
+          searchCondition.and(DSL.condition(AUDIT.USER_ID.likeIgnoreCase(q)));
+      }
+
+      final var msgOpt = parameters.message();
+      if (msgOpt.isPresent()) {
+        final var q = "%%%s%%".formatted(msgOpt.get());
+        searchCondition =
+          searchCondition.and(DSL.condition(AUDIT.MESSAGE.likeIgnoreCase(q)));
+      }
+
+      final var allConditions =
+        timeCreatedCondition.and(searchCondition);
+
+      final var baseOrdering =
+        baseSelection.where(allConditions)
+          .orderBy(AUDIT.ID.asc());
+
+      /*
+       * If a seek is specified, then seek!
+       */
+
+      final SelectForUpdateStep<?> next;
+      if (seek.isPresent()) {
+        next = baseOrdering.seek(Long.valueOf(seek.getAsLong()))
+          .limit(Integer.valueOf(parameters.limit()));
+      } else {
+        next = baseOrdering.limit(Integer.valueOf(parameters.limit()));
+      }
+
+      return next.fetch()
+        .map(record -> {
+          return new IcAuditEvent(
+            record.getValue(AUDIT.ID).longValue(),
+            record.getValue(AUDIT.USER_ID),
+            record.getValue(AUDIT.TIME),
+            record.getValue(AUDIT.TYPE),
+            record.getValue(AUDIT.MESSAGE)
+          );
+        });
+
+    } catch (final DataAccessException e) {
+      querySpan.recordException(e);
+      throw handleDatabaseException(this.transaction(), e);
+    } finally {
+      querySpan.end();
     }
   }
 
   @Override
   public void auditPut(
-    final UUID userId,
+    final UUID userIc,
     final OffsetDateTime time,
     final String type,
-    final String message,
-    final boolean confidential)
+    final String message)
     throws IcDatabaseException
   {
-    Objects.requireNonNull(userId, "userId");
+    Objects.requireNonNull(userIc, "userIc");
     Objects.requireNonNull(time, "time");
     Objects.requireNonNull(type, "type");
     Objects.requireNonNull(message, "message");
 
-    final var context =
-      this.transaction().createContext();
+    final var transaction = this.transaction();
+    final var context = transaction.createContext();
+
+    final var querySpan =
+      transaction.createQuerySpan("IcDatabaseAuditQueries.auditPut");
 
     try {
       context.insertInto(AUDIT)
         .set(AUDIT.TIME, time)
         .set(AUDIT.TYPE, type)
-        .set(AUDIT.USER_ID, userId)
+        .set(AUDIT.USER_ID, userIc)
         .set(AUDIT.MESSAGE, message)
-        .set(AUDIT.CONFIDENTIAL, Boolean.valueOf(confidential))
         .execute();
     } catch (final DataAccessException e) {
+      querySpan.recordException(e);
+      throw handleDatabaseException(transaction, e);
+    } finally {
+      querySpan.end();
+    }
+  }
+
+  @Override
+  public long auditCount(
+    final IcAuditSearchParameters parameters)
+    throws IcDatabaseException
+  {
+    Objects.requireNonNull(parameters, "parameters");
+
+    final var transaction = this.transaction();
+    final var context = transaction.createContext();
+
+    final var querySpan =
+      transaction.createQuerySpan("IcDatabaseAuditQueries.auditCount");
+
+    try {
+      /*
+       * The events must lie within the given time ranges.
+       */
+
+      final var timeCreatedCondition =
+        DSL.condition(
+          AUDIT.TIME.ge(parameters.timeRange().timeLower())
+            .and(AUDIT.TIME.le(parameters.timeRange().timeUpper()))
+        );
+
+      /*
+       * Search queries might be present.
+       */
+
+      Condition searchCondition = DSL.trueCondition();
+
+      final var typeOpt = parameters.type();
+      if (typeOpt.isPresent()) {
+        final var q = "%%%s%%".formatted(typeOpt.get());
+        searchCondition =
+          searchCondition.and(DSL.condition(AUDIT.TYPE.likeIgnoreCase(q)));
+      }
+
+      final var ownerOpt = parameters.owner();
+      if (ownerOpt.isPresent()) {
+        final var q = "%%%s%%".formatted(ownerOpt.get());
+        searchCondition =
+          searchCondition.and(DSL.condition(AUDIT.USER_ID.likeIgnoreCase(q)));
+      }
+
+      final var msgOpt = parameters.message();
+      if (msgOpt.isPresent()) {
+        final var q = "%%%s%%".formatted(msgOpt.get());
+        searchCondition =
+          searchCondition.and(DSL.condition(AUDIT.MESSAGE.likeIgnoreCase(q)));
+      }
+
+      final var allConditions =
+        timeCreatedCondition.and(searchCondition);
+
+      return ((Integer) context.selectCount()
+        .from(AUDIT)
+        .where(allConditions)
+        .fetchOne()
+        .getValue(0))
+        .longValue();
+
+    } catch (final DataAccessException e) {
+      querySpan.recordException(e);
       throw handleDatabaseException(this.transaction(), e);
+    } finally {
+      querySpan.end();
     }
   }
 }

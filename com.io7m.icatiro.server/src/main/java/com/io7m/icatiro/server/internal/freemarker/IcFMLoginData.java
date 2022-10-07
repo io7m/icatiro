@@ -16,35 +16,72 @@
 
 package com.io7m.icatiro.server.internal.freemarker;
 
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Data for the login screen template.
  *
- * @param pageTitle    The page title
- * @param title        The login form title
- * @param errorMessage The error message, if any
+ * @param htmlTitle             The HTML title
+ * @param pageHeaderTitle       The page header title
+ * @param logo                  {@code true} if the logo should be displayed
+ * @param loginTitle            The login title, if any
+ * @param loginPasswordResetURI The login password reset URI
+ * @param errorMessage          The error message, if any
+ * @param loginExtraText        The extra branding text inserted below the login
+ *                              form
  */
 
 public record IcFMLoginData(
-  String pageTitle,
-  String title,
-  Optional<String> errorMessage)
+  String htmlTitle,
+  String pageHeaderTitle,
+  boolean logo,
+  URI loginPasswordResetURI,
+  Optional<String> loginTitle,
+  Optional<IcFMLoginErrorMessage> errorMessage,
+  Optional<String> loginExtraText)
   implements IcFMDataModelType
 {
   /**
    * Data for the login screen template.
    *
-   * @param pageTitle    The page title
-   * @param title        The login form title
-   * @param errorMessage The error message, if any
+   * @param htmlTitle             The HTML title
+   * @param pageHeaderTitle       The page header title
+   * @param logo                  {@code true} if the logo should be displayed
+   * @param loginTitle            The login title, if any
+   * @param loginPasswordResetURI The login password reset URI
+   * @param errorMessage          The error message, if any
+   * @param loginExtraText        The extra branding text inserted below the
+   *                              login form
    */
 
   public IcFMLoginData
   {
-    Objects.requireNonNull(pageTitle, "pageTitle");
-    Objects.requireNonNull(title, "title");
+    Objects.requireNonNull(htmlTitle, "htmlTitle");
+    Objects.requireNonNull(pageHeaderTitle, "pageHeaderTitle");
+    Objects.requireNonNull(loginTitle, "loginTitle");
     Objects.requireNonNull(errorMessage, "errorMessage");
+    Objects.requireNonNull(loginExtraText, "brandingExtraText");
+  }
+
+  @Override
+  public Map<String, Object> toTemplateHash()
+  {
+    final var m = new HashMap<String, Object>();
+    m.put("htmlTitle", this.htmlTitle);
+    m.put("pageHeaderTitle", this.pageHeaderTitle);
+    m.put("logo", Boolean.valueOf(this.logo));
+    m.put("loginPasswordReset", this.loginPasswordResetURI);
+
+    this.loginTitle.ifPresent(
+      title -> m.put("loginTitle", title));
+    this.errorMessage().ifPresent(
+      error -> m.put("errorMessage", error));
+    this.loginExtraText.ifPresent(
+      text -> m.put("loginExtraText", text));
+    return m;
   }
 }

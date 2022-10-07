@@ -24,6 +24,7 @@ module com.io7m.icatiro.client.api
   requires static org.osgi.annotation.versioning;
 
   requires transitive com.io7m.icatiro.model;
+  requires transitive com.io7m.icatiro.error_codes;
 
   exports com.io7m.icatiro.client.api;
 }

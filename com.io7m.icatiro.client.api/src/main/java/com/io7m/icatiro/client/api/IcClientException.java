@@ -16,38 +16,49 @@
 
 package com.io7m.icatiro.client.api;
 
+import com.io7m.icatiro.error_codes.IcErrorCode;
+import com.io7m.icatiro.error_codes.IcException;
+
 import java.util.Objects;
 
 /**
  * The type of client exceptions.
  */
 
-public final class IcClientException extends Exception
+public final class IcClientException extends IcException
 {
   /**
    * Construct an exception.
    *
-   * @param message The message
+   * @param errorCode The error code
+   * @param message   The message
    */
 
   public IcClientException(
+    final IcErrorCode errorCode,
     final String message)
   {
-    super(Objects.requireNonNull(message, "message"));
+    super(
+      Objects.requireNonNull(errorCode, "errorCode"),
+      Objects.requireNonNull(message, "message")
+    );
   }
 
   /**
    * Construct an exception.
    *
-   * @param message The message
-   * @param cause   The cause
+   * @param errorCode The error code
+   * @param message   The message
+   * @param cause     The cause
    */
 
   public IcClientException(
+    final IcErrorCode errorCode,
     final String message,
     final Throwable cause)
   {
     super(
+      Objects.requireNonNull(errorCode, "errorCode"),
       Objects.requireNonNull(message, "message"),
       Objects.requireNonNull(cause, "cause")
     );
@@ -56,12 +67,17 @@ public final class IcClientException extends Exception
   /**
    * Construct an exception.
    *
-   * @param cause The cause
+   * @param errorCode The error code
+   * @param cause     The cause
    */
 
   public IcClientException(
+    final IcErrorCode errorCode,
     final Throwable cause)
   {
-    super(Objects.requireNonNull(cause, "cause"));
+    super(
+      Objects.requireNonNull(errorCode, "errorCode"),
+      Objects.requireNonNull(cause, "cause")
+    );
   }
 }

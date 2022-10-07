@@ -23,9 +23,9 @@ open module com.io7m.icatiro.tests
   requires transitive com.io7m.icatiro.client.api;
   requires transitive com.io7m.icatiro.client;
   requires transitive com.io7m.icatiro.model;
-  requires transitive com.io7m.icatiro.protocol.api;
-  requires transitive com.io7m.icatiro.protocol.api_v1;
-  requires transitive com.io7m.icatiro.protocol.versions;
+  requires transitive com.io7m.icatiro.protocol;
+  requires transitive com.io7m.icatiro.protocol.tickets;
+  requires transitive com.io7m.icatiro.protocol.tickets.cb;
 
   requires com.io7m.jmulticlose.core;
   requires java.net.http;

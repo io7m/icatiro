@@ -21,6 +21,7 @@ import com.io7m.icatiro.database.api.IcDatabaseConfiguration;
 import com.io7m.icatiro.database.api.IcDatabaseException;
 import com.io7m.icatiro.database.api.IcDatabaseFactoryType;
 import com.io7m.icatiro.database.api.IcDatabaseType;
+import io.opentelemetry.api.OpenTelemetry;
 
 import java.util.function.Consumer;
 
@@ -32,8 +33,15 @@ public final class IcCrashingDatabases implements IcDatabaseFactoryType
   }
 
   @Override
+  public String kind()
+  {
+    return "CRASHING";
+  }
+
+  @Override
   public IcDatabaseType open(
     final IcDatabaseConfiguration configuration,
+    final OpenTelemetry openTelemetry,
     final Consumer<String> startupMessages)
     throws IcDatabaseException
   {

@@ -47,6 +47,18 @@ public interface IcDatabasePagingType<P, T, Q extends IcDatabaseQueriesType>
   int pageNumber();
 
   /**
+   * @return The index of the first item in the current page
+   */
+
+  long pageFirstOffset();
+
+  /**
+   * @return An approximate count of the number of available pages
+   */
+
+  int pageCount();
+
+  /**
    * @return {@code true} If the next page is currently available
    */
 

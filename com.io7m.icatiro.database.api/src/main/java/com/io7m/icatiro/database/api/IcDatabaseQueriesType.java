@@ -27,7 +27,6 @@ import static java.time.ZoneOffset.UTC;
 
 public sealed interface IcDatabaseQueriesType
   permits IcDatabaseAuditQueriesType,
-  IcDatabasePermissionsQueriesType,
   IcDatabaseProjectsQueriesType,
   IcDatabaseTicketsQueriesType,
   IcDatabaseUsersQueriesType

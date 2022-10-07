@@ -22,7 +22,6 @@ import com.io7m.icatiro.database.api.IcDatabaseException;
 import com.io7m.icatiro.database.api.IcDatabaseFactoryType;
 import com.io7m.icatiro.database.api.IcDatabaseType;
 import com.io7m.icatiro.database.postgres.internal.IcDatabase;
-import com.io7m.icatiro.database.postgres.internal.IcDatabaseMetrics;
 import com.io7m.trasco.api.TrEventExecutingSQL;
 import com.io7m.trasco.api.TrEventType;
 import com.io7m.trasco.api.TrEventUpgrading;
@@ -33,17 +32,12 @@ import com.io7m.trasco.vanilla.TrExecutors;
 import com.io7m.trasco.vanilla.TrSchemaRevisionSetParsers;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.opentelemetry.api.OpenTelemetry;
 import org.postgresql.util.PSQLState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.management.InstanceAlreadyExistsException;
-import javax.management.MBeanRegistrationException;
-import javax.management.MalformedObjectNameException;
-import javax.management.NotCompliantMBeanException;
-import javax.management.ObjectName;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.math.BigInteger;
 import java.net.URI;
 import java.sql.Connection;
@@ -131,12 +125,20 @@ public final class IcDatabases implements IcDatabaseFactoryType
   }
 
   @Override
+  public String kind()
+  {
+    return "POSTGRESQL";
+  }
+
+  @Override
   public IcDatabaseType open(
     final IcDatabaseConfiguration configuration,
+    final OpenTelemetry openTelemetry,
     final Consumer<String> startupMessages)
     throws IcDatabaseException
   {
     Objects.requireNonNull(configuration, "configuration");
+    Objects.requireNonNull(openTelemetry, "openTelemetry");
     Objects.requireNonNull(startupMessages, "startupMessages");
 
     try {
@@ -182,14 +184,7 @@ public final class IcDatabases implements IcDatabaseFactoryType
         connection.commit();
       }
 
-      final var metrics = new IcDatabaseMetrics();
-      setupMetrics(metrics);
-
-      return new IcDatabase(
-        configuration.clock(),
-        dataSource,
-        metrics
-      );
+      return new IcDatabase(openTelemetry, configuration.clock(), dataSource);
     } catch (final IOException e) {
       throw new IcDatabaseException(e.getMessage(), e, IO_ERROR);
     } catch (final TrException e) {
@@ -198,24 +193,6 @@ public final class IcDatabases implements IcDatabaseFactoryType
       throw new IcDatabaseException(e.getMessage(), e, SQL_REVISION_ERROR);
     } catch (final SQLException e) {
       throw new IcDatabaseException(e.getMessage(), e, SQL_ERROR);
-    }
-  }
-
-  private static void setupMetrics(
-    final IcDatabaseMetrics metrics)
-  {
-    try {
-      final var server =
-        ManagementFactory.getPlatformMBeanServer();
-      final var objectName =
-        new ObjectName("com.io7m.icatiro.database.postgres:name=Metrics");
-
-      server.registerMBean(metrics, objectName);
-    } catch (final MalformedObjectNameException
-                   | InstanceAlreadyExistsException
-                   | MBeanRegistrationException
-                   | NotCompliantMBeanException e) {
-      LOG.error("unable to register metrics bean: ", e);
     }
   }
 

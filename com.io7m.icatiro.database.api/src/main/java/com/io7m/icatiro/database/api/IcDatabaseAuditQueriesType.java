@@ -17,10 +17,11 @@
 package com.io7m.icatiro.database.api;
 
 import com.io7m.icatiro.model.IcAuditEvent;
-import com.io7m.icatiro.model.IcSubsetMatch;
+import com.io7m.icatiro.model.IcAuditSearchParameters;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.OptionalLong;
 import java.util.UUID;
 
 /**
@@ -31,14 +32,10 @@ public non-sealed interface IcDatabaseAuditQueriesType
   extends IcDatabaseQueriesType
 {
   /**
-   * Retrieve all audit events from the database between the given (inclusive)
-   * times.
+   * Retrieve all audit events from the database matching the given parameters.
    *
-   * @param fromInclusive The inclusive lower bound on the event times
-   * @param toInclusive   The inclusive upper bound on the event times
-   * @param message       The subset of messages to include
-   * @param type          The subset of types to include
-   * @param owner         The subset of owners to include
+   * @param parameters The search parameters
+   * @param seek       The record to which to seek, if any
    *
    * @return A series of audit events, sorted by time
    *
@@ -46,30 +43,35 @@ public non-sealed interface IcDatabaseAuditQueriesType
    */
 
   List<IcAuditEvent> auditEvents(
-    OffsetDateTime fromInclusive,
-    OffsetDateTime toInclusive,
-    IcSubsetMatch<String> owner,
-    IcSubsetMatch<String> type,
-    IcSubsetMatch<String> message)
+    IcAuditSearchParameters parameters,
+    OptionalLong seek)
     throws IcDatabaseException;
 
   /**
    * Create an audit event.
    *
-   * @param userId       The user ID of the event
-   * @param time         The event time
-   * @param type         The event type
-   * @param message      The event message
-   * @param confidential The event confidentiality
+   * @param userIc  The user ID of the event
+   * @param time    The event time
+   * @param type    The event type
+   * @param message The event message
    *
    * @throws IcDatabaseException On errors
    */
 
   void auditPut(
-    UUID userId,
+    UUID userIc,
     OffsetDateTime time,
     String type,
-    String message,
-    boolean confidential)
+    String message)
     throws IcDatabaseException;
+
+  /**
+   * @param parameters The parameters
+   *
+   * @return The number of events matching the given parameter
+   */
+
+  long auditCount(IcAuditSearchParameters parameters)
+    throws IcDatabaseException;
+
 }
