@@ -19,15 +19,13 @@ package com.io7m.icatiro.tests;
 import com.io7m.icatiro.client.IcClients;
 import com.io7m.icatiro.client.api.IcClientException;
 import com.io7m.icatiro.client.api.IcClientType;
-import com.io7m.icatiro.error_codes.IcStandardErrorCodes;
-import com.io7m.icatiro.model.IcPermission;
 import com.io7m.icatiro.model.IcPermissionGlobal;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
+import com.io7m.icatiro.model.IcTicketColumn;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketCreation;
 import com.io7m.icatiro.model.IcTicketListParameters;
-import com.io7m.icatiro.model.IcTicketOrdering;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTicketTitle;
 import com.io7m.icatiro.model.IcTimeRange;
@@ -169,7 +167,7 @@ public final class IcTicketsTest extends IcWithServerContract
         new IcTicketListParameters(
           IcTimeRange.largest(),
           IcTimeRange.largest(),
-          IcTicketOrdering.noOrdering(),
+          new IcTicketColumnOrdering(BY_ID, true),
           1000
         )
       );
@@ -227,9 +225,7 @@ public final class IcTicketsTest extends IcWithServerContract
         new IcTicketListParameters(
           IcTimeRange.largest(),
           IcTimeRange.largest(),
-          new IcTicketOrdering(
-            List.of(new IcTicketColumnOrdering(BY_ID, true))
-          ),
+          new IcTicketColumnOrdering(BY_ID, true),
           30
         )
       );
@@ -400,9 +396,7 @@ public final class IcTicketsTest extends IcWithServerContract
         new IcTicketListParameters(
           IcTimeRange.largest(),
           IcTimeRange.largest(),
-          new IcTicketOrdering(
-            List.of(new IcTicketColumnOrdering(BY_ID, true))
-          ),
+          new IcTicketColumnOrdering(BY_ID, true),
           30
         )
       );
@@ -433,9 +427,7 @@ public final class IcTicketsTest extends IcWithServerContract
         new IcTicketListParameters(
           IcTimeRange.largest(),
           IcTimeRange.largest(),
-          new IcTicketOrdering(
-            List.of(new IcTicketColumnOrdering(BY_ID, true))
-          ),
+          new IcTicketColumnOrdering(BY_ID, true),
           30
         )
       );

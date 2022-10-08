@@ -93,7 +93,6 @@ final class IcDatabaseProjectsQueries
         .set(AUDIT.TIME, this.currentTime())
         .set(AUDIT.MESSAGE, Long.toUnsignedString(newId))
         .set(AUDIT.TYPE, "PROJECT_CREATED")
-        .set(AUDIT.CONFIDENTIAL, Boolean.FALSE)
         .execute();
 
       return new IcProject(

@@ -9,10 +9,10 @@ com.io7m.icatiro.tests.arbitraries.IcArbProjectIdProvider
 com.io7m.icatiro.tests.arbitraries.IcArbProjectProvider
 com.io7m.icatiro.tests.arbitraries.IcArbProjectShortNameProvider
 com.io7m.icatiro.tests.arbitraries.IcArbProjectTitleProvider
+com.io7m.icatiro.tests.arbitraries.IcArbTicketColumnOrderingProvider
 com.io7m.icatiro.tests.arbitraries.IcArbTicketCreationProvider
 com.io7m.icatiro.tests.arbitraries.IcArbTicketIdProvider
 com.io7m.icatiro.tests.arbitraries.IcArbTicketListParametersProvider
-com.io7m.icatiro.tests.arbitraries.IcArbTicketOrderingProvider
 com.io7m.icatiro.tests.arbitraries.IcArbTicketSummaryProvider
 com.io7m.icatiro.tests.arbitraries.IcArbTicketTitleProvider
 com.io7m.icatiro.tests.arbitraries.IcArbTimeRangeProvider

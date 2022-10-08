@@ -163,12 +163,6 @@
   [field ascending cb:Boolean]
 ]
 
-[documentation Ic1TicketOrdering "A set of column ordering specs."]
-[record Ic1TicketOrdering
-  [documentation columns "The column orders."]
-  [field columns [cb:List Ic1TicketColumnOrdering]]
-]
-
 [documentation Ic1TicketSearchParameters "Search parameters for tickets."]
 [record Ic1TicketSearchParameters
   [documentation timeCreatedRange "The range of creation times for returned tickets."]
@@ -176,7 +170,7 @@
   [documentation timeUpdatedRange "The range of update times for returned tickets."]
   [field timeUpdatedRange Ic1TimeRange]
   [documentation ordering "The result ordering."]
-  [field ordering Ic1TicketOrdering]
+  [field ordering Ic1TicketColumnOrdering]
   [documentation limit "The limit on the number of results."]
   [field limit cb:IntegerUnsigned16]
 ]

@@ -18,24 +18,25 @@ package com.io7m.icatiro.tests.arbitraries;
 
 import com.io7m.icatiro.model.IcTicketColumn;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
-import com.io7m.icatiro.model.IcTicketOrdering;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
+import net.jqwik.api.Combinators;
 import net.jqwik.api.providers.TypeUsage;
 
 import java.util.Set;
 
 /**
- * A provider of {@link IcTicketOrdering} values.
+ * A provider of {@link IcTicketColumnOrdering} values.
  */
 
-public final class IcArbTicketOrderingProvider extends IcArbAbstractProvider
+public final class IcArbTicketColumnOrderingProvider
+  extends IcArbAbstractProvider
 {
   /**
    * A provider of values.
    */
 
-  public IcArbTicketOrderingProvider()
+  public IcArbTicketColumnOrderingProvider()
   {
 
   }
@@ -44,7 +45,7 @@ public final class IcArbTicketOrderingProvider extends IcArbAbstractProvider
   public boolean canProvideFor(
     final TypeUsage targetType)
   {
-    return targetType.isOfType(IcTicketOrdering.class);
+    return targetType.isOfType(IcTicketColumnOrdering.class);
   }
 
   @Override
@@ -52,17 +53,14 @@ public final class IcArbTicketOrderingProvider extends IcArbAbstractProvider
     final TypeUsage targetType,
     final SubtypeProvider subtypeProvider)
   {
-    final var a =
-      Arbitraries.defaultFor(IcTicketColumn.class)
-        .set()
-        .map(cs -> {
-          return new IcTicketOrdering(
-            cs.stream()
-              .map(c -> new IcTicketColumnOrdering(c, true))
-              .toList()
-          );
-        });
-
-    return Set.of(a);
+    return Set.of(
+      Combinators.combine(
+        Arbitraries.defaultFor(IcTicketColumn.class),
+        Arbitraries.integers()
+          .map(i -> Boolean.valueOf(i % 2 == 0))
+      ).as((column, ascending) -> {
+        return new IcTicketColumnOrdering(column, ascending.booleanValue());
+      })
+    );
   }
 }

@@ -16,8 +16,8 @@
 
 package com.io7m.icatiro.tests.arbitraries;
 
+import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketListParameters;
-import com.io7m.icatiro.model.IcTicketOrdering;
 import com.io7m.icatiro.model.IcTimeRange;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
@@ -56,7 +56,7 @@ public final class IcArbTicketListParametersProvider extends IcArbAbstractProvid
     final var t =
       Arbitraries.defaultFor(IcTimeRange.class);
     final var o =
-      Arbitraries.defaultFor(IcTicketOrdering.class);
+      Arbitraries.defaultFor(IcTicketColumnOrdering.class);
     final var s =
       Arbitraries.strings();
     final var i =

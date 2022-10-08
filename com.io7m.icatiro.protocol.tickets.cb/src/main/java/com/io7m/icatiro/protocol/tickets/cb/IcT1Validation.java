@@ -38,7 +38,6 @@ import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketCreation;
 import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketListParameters;
-import com.io7m.icatiro.model.IcTicketOrdering;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTicketTitle;
 import com.io7m.icatiro.model.IcTimeRange;
@@ -432,16 +431,8 @@ public final class IcT1Validation
     return new Ic1TicketSearchParameters(
       toWireTimeRange(p.timeCreatedRange()),
       toWireTimeRange(p.timeUpdatedRange()),
-      toWireTicketOrdering(p.ordering()),
+      toWireTicketColumnOrdering(p.ordering()),
       unsigned16(p.limit())
-    );
-  }
-
-  private static Ic1TicketOrdering toWireTicketOrdering(
-    final IcTicketOrdering ordering)
-  {
-    return new Ic1TicketOrdering(
-      toWireTicketColumnOrderings(ordering.ordering())
     );
   }
 
@@ -836,7 +827,7 @@ public final class IcT1Validation
     return new IcTicketListParameters(
       fromWireTimeRange(p.fieldTimeCreatedRange()),
       fromWireTimeRange(p.fieldTimeUpdatedRange()),
-      fromWireTicketOrdering(p.fieldOrdering()),
+      fromWireColumnOrdering(p.fieldOrdering()),
       p.fieldLimit().value()
     );
   }
@@ -876,14 +867,6 @@ public final class IcT1Validation
       t.fieldSecond().value(),
       (int) (t.fieldMillisecond().value() * 1000L),
       ZoneOffset.UTC
-    );
-  }
-
-  private static IcTicketOrdering fromWireTicketOrdering(
-    final Ic1TicketOrdering o)
-  {
-    return new IcTicketOrdering(
-      fromWireColumnOrderings(o.fieldColumns())
     );
   }
 

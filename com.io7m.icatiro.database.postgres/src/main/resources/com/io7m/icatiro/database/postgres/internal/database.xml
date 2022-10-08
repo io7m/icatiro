@@ -107,7 +107,6 @@ create table audit (
   time           timestamp with time zone not null,
   type           varchar(1000000)         not null,
   message        varchar(1000000)         not null,
-  confidential   boolean                  not null,
 
   foreign key (user_id) references users (id)
 )

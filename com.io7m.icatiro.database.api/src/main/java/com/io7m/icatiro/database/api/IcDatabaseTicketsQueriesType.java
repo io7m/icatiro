@@ -16,8 +16,8 @@
 
 package com.io7m.icatiro.database.api;
 
+import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketCreation;
-import com.io7m.icatiro.model.IcTicketOrdering;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTimeRange;
 
@@ -55,7 +55,7 @@ public non-sealed interface IcDatabaseTicketsQueriesType
    *                         included
    * @param timeUpdatedRange Only tickets updated within this time range will be
    *                         included
-   * @param ordering         The fields by which to order the list of tickets
+   * @param ordering         The field by which to order the list of tickets
    * @param limit            The limit on the number of items returned
    * @param seek             The record to which to seek, if any
    *
@@ -68,9 +68,9 @@ public non-sealed interface IcDatabaseTicketsQueriesType
     UUID user,
     IcTimeRange timeCreatedRange,
     IcTimeRange timeUpdatedRange,
-    IcTicketOrdering ordering,
+    IcTicketColumnOrdering ordering,
     int limit,
-    Optional<List<Object>> seek)
+    Optional<Object> seek)
     throws IcDatabaseException;
 
   /**

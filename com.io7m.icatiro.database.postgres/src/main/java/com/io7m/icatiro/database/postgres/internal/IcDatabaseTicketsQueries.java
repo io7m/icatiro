@@ -24,21 +24,19 @@ import com.io7m.icatiro.model.IcProjectID;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
 import com.io7m.icatiro.model.IcProjectUniqueIdentifierType;
+import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketCreation;
 import com.io7m.icatiro.model.IcTicketID;
-import com.io7m.icatiro.model.IcTicketOrdering;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTicketTitle;
 import com.io7m.icatiro.model.IcTimeRange;
 import com.io7m.idstore.model.IdName;
 import org.jooq.DSLContext;
-import org.jooq.OrderField;
 import org.jooq.SelectForUpdateStep;
+import org.jooq.SortField;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -63,43 +61,6 @@ final class IcDatabaseTicketsQueries
     final IcDatabaseTransaction inTransaction)
   {
     super(inTransaction);
-  }
-
-  private static Collection<? extends OrderField<?>> orderFields(
-    final IcTicketOrdering ordering)
-  {
-    final var columns = ordering.ordering();
-    final var fields = new ArrayList<OrderField<?>>(columns.size());
-    for (final var columnOrder : columns) {
-      fields.add(
-        switch (columnOrder.column()) {
-          case BY_ID -> {
-            if (columnOrder.ascending()) {
-              yield TICKETS.ID.asc();
-            }
-            yield TICKETS.ID.desc();
-          }
-          case BY_TIME_CREATED -> {
-            if (columnOrder.ascending()) {
-              yield TICKETS.TIME_CREATED.asc();
-            }
-            yield TICKETS.TIME_CREATED.desc();
-          }
-          case BY_TIME_UPDATED -> {
-            if (columnOrder.ascending()) {
-              yield TICKETS.TIME_UPDATED.asc();
-            }
-            yield TICKETS.TIME_UPDATED.desc();
-          }
-          case BY_TITLE -> {
-            if (columnOrder.ascending()) {
-              yield TICKETS.TITLE.asc();
-            }
-            yield TICKETS.TITLE.desc();
-          }
-        });
-    }
-    return List.copyOf(fields);
   }
 
   private static IcTicketSummary mapTicketWithPermissions(
@@ -190,7 +151,6 @@ final class IcDatabaseTicketsQueries
         .set(AUDIT.TIME, this.currentTime())
         .set(AUDIT.MESSAGE, toUnsignedString(newId))
         .set(AUDIT.TYPE, "TICKET_CREATED")
-        .set(AUDIT.CONFIDENTIAL, Boolean.FALSE)
         .execute();
 
       return new IcTicketSummary(
@@ -216,9 +176,9 @@ final class IcDatabaseTicketsQueries
     final UUID userId,
     final IcTimeRange timeCreatedRange,
     final IcTimeRange timeUpdatedRange,
-    final IcTicketOrdering ordering,
+    final IcTicketColumnOrdering ordering,
     final int limit,
-    final Optional<List<Object>> seek)
+    final Optional<Object> seek)
     throws IcDatabaseException
   {
     Objects.requireNonNull(userId, "userId");
@@ -236,9 +196,8 @@ final class IcDatabaseTicketsQueries
         "IdDatabaseTicketsQueries.ticketListWithPermissions");
 
     try {
-      final var user =
-        context.fetchOptional(USERS, USERS.ID.eq(userId))
-          .orElseThrow(USER_DOES_NOT_EXIST);
+      context.fetchOptional(USERS, USERS.ID.eq(userId))
+        .orElseThrow(USER_DOES_NOT_EXIST);
 
       final var baseSelection =
         context.select(
@@ -292,7 +251,7 @@ final class IcDatabaseTicketsQueries
 
       final var baseOrdering =
         baseSelection.where(allConditions)
-          .orderBy(orderFields(ordering));
+          .orderBy(List.of(orderField(ordering)));
 
       /*
        * If a seek is specified, then seek!
@@ -301,8 +260,7 @@ final class IcDatabaseTicketsQueries
       final SelectForUpdateStep<?> next;
       if (seek.isPresent()) {
         final var page = seek.get();
-        final var fields = page.toArray();
-        next = baseOrdering.seek(fields).limit(Integer.valueOf(limit));
+        next = baseOrdering.seek(page).limit(Integer.valueOf(limit));
       } else {
         next = baseOrdering.limit(Integer.valueOf(limit));
       }
@@ -315,6 +273,19 @@ final class IcDatabaseTicketsQueries
     } finally {
       querySpan.end();
     }
+  }
+
+  private static SortField<?> orderField(
+    final IcTicketColumnOrdering ordering)
+  {
+    final var field =
+      switch (ordering.column()) {
+        case BY_ID -> TICKETS.ID;
+        case BY_TITLE -> TICKETS.TITLE;
+        case BY_TIME_CREATED -> TICKETS.TIME_CREATED;
+        case BY_TIME_UPDATED -> TICKETS.TIME_UPDATED;
+      };
+    return ordering.ascending() ? field.asc() : field.desc();
   }
 
   @Override

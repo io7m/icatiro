@@ -17,11 +17,10 @@
 
 package com.io7m.icatiro.database.api;
 
+import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketListParameters;
-import com.io7m.icatiro.model.IcTicketOrdering;
 import com.io7m.icatiro.model.IcTicketSummary;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,7 +56,7 @@ public final class IcDatabaseTicketListPaging
 
   private static final class Page
   {
-    private volatile Optional<List<Object>> seek = Optional.empty();
+    private volatile Optional<Object> seek = Optional.empty();
 
     Page()
     {
@@ -176,44 +175,22 @@ public final class IcDatabaseTicketListPaging
 
       final var lastSummary = results.get(results.size() - 1);
       nextPage.seek = Optional.of(
-        fieldsForSeek(lastSummary, this.parameters.ordering())
+        fieldForSeek(lastSummary, this.parameters.ordering())
       );
     }
 
     return results;
   }
 
-  private static List<Object> fieldsForSeek(
+  private static Object fieldForSeek(
     final IcTicketSummary summary,
-    final IcTicketOrdering ordering)
+    final IcTicketColumnOrdering ordering)
   {
-    final var orderColumns =
-      ordering.ordering();
-    final var columnCount =
-      orderColumns.size();
-    final var fields =
-      new ArrayList<>(columnCount);
-
-    for (int index = 0; index < columnCount; ++index) {
-      final var columnOrdering = orderColumns.get(index);
-      fields.add(
-        switch (columnOrdering.column()) {
-          case BY_ID -> {
-            yield Long.valueOf(summary.ticketId().value());
-          }
-          case BY_TITLE -> {
-            yield summary.ticketTitle().value();
-          }
-          case BY_TIME_CREATED -> {
-            yield summary.timeCreated();
-          }
-          case BY_TIME_UPDATED -> {
-            yield summary.timeUpdated();
-          }
-        });
-      Objects.requireNonNull(fields.get(index), "fields.get(index)");
-    }
-
-    return List.copyOf(fields);
+    return switch (ordering.column()) {
+      case BY_ID -> Long.valueOf(summary.ticketId().value());
+      case BY_TITLE -> summary.ticketTitle().value();
+      case BY_TIME_CREATED -> summary.timeCreated();
+      case BY_TIME_UPDATED -> summary.timeUpdated();
+    };
   }
 }

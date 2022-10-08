@@ -60,6 +60,13 @@ final class IcDatabaseAuditQueries
     final var querySpan =
       transaction.createQuerySpan("IcDatabaseAuditQueries.auditEvents");
 
+    IcDatabaseGenericPaginatedQueries.createPageDefinitions(
+      context,
+      AUDIT,
+      List.of(AUDIT.ID),
+      100
+    );
+
     try {
       final var baseSelection =
         context.selectFrom(AUDIT);

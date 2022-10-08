@@ -19,7 +19,6 @@ package com.io7m.icatiro.model;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Objects;
 
 import static com.io7m.icatiro.model.IcTicketColumn.BY_ID;
@@ -39,7 +38,7 @@ import static java.time.ZoneOffset.UTC;
 public record IcTicketListParameters(
   IcTimeRange timeCreatedRange,
   IcTimeRange timeUpdatedRange,
-  IcTicketOrdering ordering,
+  IcTicketColumnOrdering ordering,
   int limit)
 {
   /**
@@ -73,7 +72,7 @@ public record IcTicketListParameters(
     return new IcTicketListParameters(
       new IcTimeRange(DEFAULT_TIME_LOW, now.plusDays(1L)),
       new IcTimeRange(DEFAULT_TIME_LOW, now.plusDays(1L)),
-      new IcTicketOrdering(List.of(new IcTicketColumnOrdering(BY_ID, false))),
+      new IcTicketColumnOrdering(BY_ID, false),
       20
     );
   }
