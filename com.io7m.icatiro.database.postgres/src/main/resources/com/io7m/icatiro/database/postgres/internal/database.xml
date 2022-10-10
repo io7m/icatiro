@@ -43,9 +43,9 @@ create table schema_version (
 
     <Statement><![CDATA[
 create table users (
-  id      uuid             not null primary key,
-  name    varchar(1000000) not null,
-  initial boolean          not null
+  id      uuid     not null primary key,
+  name    text     not null,
+  initial boolean  not null
 )
 ]]></Statement>
 
@@ -102,11 +102,11 @@ create table emails (
 
     <Statement><![CDATA[
 create table audit (
-  id             bigint                   not null primary key generated always as identity,
-  user_id        uuid                     not null,
-  time           timestamp with time zone not null,
-  type           varchar(1000000)         not null,
-  message        varchar(1000000)         not null,
+  id       bigint                   not null primary key generated always as identity,
+  user_id  uuid                     not null,
+  time     timestamp with time zone not null,
+  type     text                     not null,
+  message  text                     not null,
 
   foreign key (user_id) references users (id)
 )
@@ -114,15 +114,19 @@ create table audit (
 
     <Statement>grant insert, select on audit to icatiro</Statement>
 
+    <Statement><![CDATA[
+create index on audit (time);
+]]></Statement>
+
     <Comment>
       The projects table stores the set of projects.
     </Comment>
 
     <Statement><![CDATA[
 create table projects (
-  id            bigint             not null primary key generated always as identity,
-  name_display  varchar(1000000)   not null unique,
-  name_short    varchar(16)        not null unique
+  id            bigint           not null primary key generated always as identity,
+  name_display  varchar(1000000) not null unique,
+  name_short    varchar(1000000) not null unique
 )
 ]]></Statement>
 
@@ -136,10 +140,16 @@ create table projects (
 create table tickets (
   id             bigint                    not null primary key generated always as identity,
   project        bigint                    not null,
-  title          varchar(1000000)          not null,
+  title          text                      not null,
+  description    text                      not null,
   reporter       uuid                      not null,
   time_created   timestamp with time zone  not null,
   time_updated   timestamp with time zone  not null,
+
+  -- [jooq ignore start]
+  title_ts        tsvector generated always as (to_tsvector('english', title)) stored,
+  description_ts  tsvector generated always as (to_tsvector('english', description)) stored,
+  -- [jooq ignore stop]
 
   foreign key (project)  references projects (id),
   foreign key (reporter) references users (id)
@@ -149,6 +159,30 @@ create table tickets (
     <Statement>grant insert, select on tickets to icatiro</Statement>
     <Statement>grant update (title) on tickets to icatiro</Statement>
     <Statement>grant update (time_updated) on tickets to icatiro</Statement>
+
+    <Statement><![CDATA[
+-- [jooq ignore start]
+create index on tickets (time_created);
+-- [jooq ignore stop]
+]]></Statement>
+
+    <Statement><![CDATA[
+-- [jooq ignore start]
+create index on tickets (time_updated);
+-- [jooq ignore stop]
+]]></Statement>
+
+    <Statement><![CDATA[
+-- [jooq ignore start]
+create index on tickets using gin (title_ts);
+-- [jooq ignore stop]
+]]></Statement>
+
+    <Statement><![CDATA[
+-- [jooq ignore start]
+create index on tickets using gin (description_ts);
+-- [jooq ignore stop]
+]]></Statement>
 
     <Comment>
       The permissions table stores the set of permissions held by a user. If scope_project is non-null, then the

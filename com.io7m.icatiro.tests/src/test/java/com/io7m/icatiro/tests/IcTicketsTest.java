@@ -22,10 +22,9 @@ import com.io7m.icatiro.client.api.IcClientType;
 import com.io7m.icatiro.model.IcPermissionGlobal;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
-import com.io7m.icatiro.model.IcTicketColumn;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketCreation;
-import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTicketTitle;
 import com.io7m.icatiro.model.IcTimeRange;
@@ -39,14 +38,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.AUTHENTICATION_ERROR;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.NOT_LOGGED_IN;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.OPERATION_NOT_PERMITTED;
+import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROTOCOL_ERROR;
 import static com.io7m.icatiro.model.IcPermission.TICKET_CREATE;
 import static com.io7m.icatiro.model.IcPermission.TICKET_READ;
 import static com.io7m.icatiro.model.IcTicketColumn.BY_ID;
-import static com.io7m.icatiro.model.IcTicketListParameters.defaults;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -156,7 +156,11 @@ public final class IcTicketsTest extends IcWithServerContract
 
     final var ticket =
       this.client.ticketCreate(
-        new IcTicketCreation(project.id(), new IcTicketTitle("A ticket."))
+        new IcTicketCreation(
+          project.id(),
+          new IcTicketTitle("A ticket."),
+          "A ticket description"
+        )
       );
 
     assertEquals(project.id(), ticket.ticketId().project());
@@ -164,17 +168,20 @@ public final class IcTicketsTest extends IcWithServerContract
 
     final var page =
       this.client.ticketSearchBegin(
-        new IcTicketListParameters(
+        new IcTicketSearch(
           IcTimeRange.largest(),
           IcTimeRange.largest(),
           new IcTicketColumnOrdering(BY_ID, true),
-          1000
+          1000,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty()
         )
       );
 
     assertEquals(1, page.items().size());
     assertEquals(ticket, page.items().get(0));
-    assertEquals(0, page.pageIndex());
+    assertEquals(1, page.pageIndex());
     assertEquals(1, page.pageCount());
     assertEquals(0L, page.pageFirstOffset());
   }
@@ -209,7 +216,9 @@ public final class IcTicketsTest extends IcWithServerContract
         this.client.ticketCreate(
           new IcTicketCreation(
             project.id(),
-            new IcTicketTitle(Integer.toUnsignedString(index)))
+            new IcTicketTitle(Integer.toUnsignedString(index)),
+            "Ticket description %d".formatted(index)
+          )
         );
 
       assertEquals(project.id(), ticket.ticketId().project());
@@ -222,66 +231,69 @@ public final class IcTicketsTest extends IcWithServerContract
 
     var page =
       this.client.ticketSearchBegin(
-        new IcTicketListParameters(
+        new IcTicketSearch(
           IcTimeRange.largest(),
           IcTimeRange.largest(),
           new IcTicketColumnOrdering(BY_ID, true),
-          30
+          30,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty()
         )
       );
 
     assertEquals(30, page.items().size());
     assertEquals(4, page.pageCount());
-    assertEquals(0, page.pageIndex());
+    assertEquals(1, page.pageIndex());
     assertEquals(0L, page.pageFirstOffset());
     checkItemsById(1L, page.items());
 
     page = this.client.ticketSearchNext();
     assertEquals(30, page.items().size());
     assertEquals(4, page.pageCount());
-    assertEquals(1, page.pageIndex());
+    assertEquals(2, page.pageIndex());
     assertEquals(30L, page.pageFirstOffset());
     checkItemsById(31L, page.items());
 
     page = this.client.ticketSearchNext();
     assertEquals(30, page.items().size());
     assertEquals(4, page.pageCount());
-    assertEquals(2, page.pageIndex());
+    assertEquals(3, page.pageIndex());
     assertEquals(60L, page.pageFirstOffset());
     checkItemsById(61L, page.items());
 
     page = this.client.ticketSearchNext();
     assertEquals(11, page.items().size());
     assertEquals(4, page.pageCount());
-    assertEquals(3, page.pageIndex());
+    assertEquals(4, page.pageIndex());
     assertEquals(90L, page.pageFirstOffset());
     checkItemsById(91L, page.items());
 
     page = this.client.ticketSearchNext();
     assertEquals(11, page.items().size());
     assertEquals(4, page.pageCount());
-    assertEquals(3, page.pageIndex());
+    assertEquals(4, page.pageIndex());
     assertEquals(90L, page.pageFirstOffset());
     checkItemsById(91L, page.items());
 
     page = this.client.ticketSearchPrevious();
     assertEquals(30, page.items().size());
     assertEquals(4, page.pageCount());
-    assertEquals(2, page.pageIndex());
+    assertEquals(3, page.pageIndex());
     assertEquals(60L, page.pageFirstOffset());
     checkItemsById(61L, page.items());
 
     page = this.client.ticketSearchPrevious();
     assertEquals(30, page.items().size());
     assertEquals(4, page.pageCount());
-    assertEquals(1, page.pageIndex());
+    assertEquals(2, page.pageIndex());
     assertEquals(30L, page.pageFirstOffset());
     checkItemsById(31L, page.items());
 
     page = this.client.ticketSearchPrevious();
     assertEquals(30, page.items().size());
     assertEquals(4, page.pageCount());
-    assertEquals(0, page.pageIndex());
+    assertEquals(1, page.pageIndex());
     assertEquals(0L, page.pageFirstOffset());
     checkItemsById(1L, page.items());
   }
@@ -317,7 +329,9 @@ public final class IcTicketsTest extends IcWithServerContract
 
     final var ex =
       assertThrows(IcClientException.class, () -> {
-        this.client.permissionGrant(user0, new IcPermissionGlobal(TICKET_CREATE));
+        this.client.permissionGrant(
+          user0,
+          new IcPermissionGlobal(TICKET_CREATE));
       });
 
     assertEquals(OPERATION_NOT_PERMITTED, ex.errorCode());
@@ -344,7 +358,7 @@ public final class IcTicketsTest extends IcWithServerContract
   }
 
   /**
-   * A user can see tickets after they receive the correct permissions.
+   * A user can see ticketSearch after they receive the correct permissions.
    *
    * @throws Exception On errors
    */
@@ -358,7 +372,7 @@ public final class IcTicketsTest extends IcWithServerContract
     this.icatiro().userInitialSet(userId0);
 
     /*
-     * Create a pile of tickets with a user that has permissions.
+     * Create a pile of ticketSearch with a user that has permissions.
      */
 
     var user0 =
@@ -379,13 +393,15 @@ public final class IcTicketsTest extends IcWithServerContract
         this.client.ticketCreate(
           new IcTicketCreation(
             project.id(),
-            new IcTicketTitle(Integer.toUnsignedString(index)))
+            new IcTicketTitle(Integer.toUnsignedString(index)),
+            "Ticket description %d".formatted(index)
+          )
         );
       tickets.add(ticket);
     }
 
     /*
-     * Switch to another user and check that we're unable to see tickets.
+     * Switch to another user and check that we're unable to see ticketSearch.
      */
 
     var user1 =
@@ -393,17 +409,20 @@ public final class IcTicketsTest extends IcWithServerContract
 
     var page =
       this.client.ticketSearchBegin(
-        new IcTicketListParameters(
+        new IcTicketSearch(
           IcTimeRange.largest(),
           IcTimeRange.largest(),
           new IcTicketColumnOrdering(BY_ID, true),
-          30
+          30,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty()
         )
       );
 
     assertEquals(0, page.items().size());
     assertEquals(1, page.pageCount());
-    assertEquals(0, page.pageIndex());
+    assertEquals(1, page.pageIndex());
     assertEquals(0L, page.pageFirstOffset());
 
     /*
@@ -413,10 +432,12 @@ public final class IcTicketsTest extends IcWithServerContract
 
     user0 =
       this.client.login("someone", "12345678", serverAPIBase());
-    this.client.permissionGrant(user1.id(), new IcPermissionGlobal(TICKET_READ));
+    this.client.permissionGrant(
+      user1.id(),
+      new IcPermissionGlobal(TICKET_READ));
 
     /*
-     * Switch to back to the second user and check that we can now see tickets.
+     * Switch to back to the second user and check that we can now see ticketSearch.
      */
 
     user1 =
@@ -424,17 +445,20 @@ public final class IcTicketsTest extends IcWithServerContract
 
     page =
       this.client.ticketSearchBegin(
-        new IcTicketListParameters(
+        new IcTicketSearch(
           IcTimeRange.largest(),
           IcTimeRange.largest(),
           new IcTicketColumnOrdering(BY_ID, true),
-          30
+          30,
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty()
         )
       );
 
     assertEquals(10, page.items().size());
     assertEquals(1, page.pageCount());
-    assertEquals(0, page.pageIndex());
+    assertEquals(1, page.pageIndex());
     assertEquals(0L, page.pageFirstOffset());
   }
 
@@ -453,7 +477,17 @@ public final class IcTicketsTest extends IcWithServerContract
         assertEquals(
           NOT_LOGGED_IN,
           assertThrows(IcClientException.class, () -> {
-            this.client.ticketSearchBegin(defaults());
+            this.client.ticketSearchBegin(
+              new IcTicketSearch(
+                IcTimeRange.largest(),
+                IcTimeRange.largest(),
+                new IcTicketColumnOrdering(BY_ID, true),
+                30,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty()
+              )
+            );
           }).errorCode()
         );
       },
@@ -473,5 +507,37 @@ public final class IcTicketsTest extends IcWithServerContract
           }).errorCode()
         );
       });
+  }
+
+  /**
+   * Ticket searches must be started before pages can be retrieved.
+   *
+   * @throws Exception On errors
+   */
+
+  @Test
+  public void testTicketSearchWrong()
+    throws Exception
+  {
+    final var user = this.createIdstoreUser("someone");
+    this.icatiro().userInitialSet(user);
+
+    this.client.login("someone", "12345678", serverAPIBase());
+
+    {
+      final var ex =
+        assertThrows(IcClientException.class, () -> {
+          this.client.ticketSearchNext();
+        });
+      assertEquals(PROTOCOL_ERROR, ex.errorCode());
+    }
+
+    {
+      final var ex =
+        assertThrows(IcClientException.class, () -> {
+          this.client.ticketSearchPrevious();
+        });
+      assertEquals(PROTOCOL_ERROR, ex.errorCode());
+    }
   }
 }

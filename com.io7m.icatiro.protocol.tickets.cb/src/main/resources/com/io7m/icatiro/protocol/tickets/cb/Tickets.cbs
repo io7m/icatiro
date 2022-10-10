@@ -173,6 +173,12 @@
   [field ordering Ic1TicketColumnOrdering]
   [documentation limit "The limit on the number of results."]
   [field limit cb:IntegerUnsigned16]
+  [documentation titleSearch "The title search query, if required."]
+  [field titleSearch [cb:Option cb:String]]
+  [documentation descriptionSearch "The description search query, if required."]
+  [field descriptionSearch [cb:Option cb:String]]
+  [documentation reporter "The required ticket reporter, if any."]
+  [field reporter [cb:Option Ic1UUID]]
 ]
 
 [documentation Ic1Project "A project."]
@@ -217,12 +223,14 @@
 [documentation Ic1CommandTicketSearchPrevious "Get the previous page of ticket search results."]
 [record Ic1CommandTicketSearchPrevious]
 
-[documentation Ic1CommandTicketCreate "A request to create a project."]
+[documentation Ic1CommandTicketCreate "A request to create a ticket."]
 [record Ic1CommandTicketCreate
   [documentation project "The project ID."]
   [field project cb:IntegerUnsigned64]
   [documentation title "The ticket title."]
   [field title cb:String]
+  [documentation description "The ticket description."]
+  [field description cb:String]
 ]
 
 [documentation Ic1CommandPermissionGrant "A request to grant a permission."]

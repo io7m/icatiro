@@ -17,7 +17,7 @@
 package com.io7m.icatiro.tests.arbitraries;
 
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
-import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTimeRange;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
@@ -25,18 +25,19 @@ import net.jqwik.api.Combinators;
 import net.jqwik.api.providers.TypeUsage;
 
 import java.util.Set;
+import java.util.UUID;
 
 /**
- * A provider of {@link IcTicketListParameters} values.
+ * A provider of {@link IcTicketSearch} values.
  */
 
-public final class IcArbTicketListParametersProvider extends IcArbAbstractProvider
+public final class IcArbTicketListSearchProvider extends IcArbAbstractProvider
 {
   /**
    * A provider of values.
    */
 
-  public IcArbTicketListParametersProvider()
+  public IcArbTicketListSearchProvider()
   {
 
   }
@@ -45,7 +46,7 @@ public final class IcArbTicketListParametersProvider extends IcArbAbstractProvid
   public boolean canProvideFor(
     final TypeUsage targetType)
   {
-    return targetType.isOfType(IcTicketListParameters.class);
+    return targetType.isOfType(IcTicketSearch.class);
   }
 
   @Override
@@ -57,21 +58,32 @@ public final class IcArbTicketListParametersProvider extends IcArbAbstractProvid
       Arbitraries.defaultFor(IcTimeRange.class);
     final var o =
       Arbitraries.defaultFor(IcTicketColumnOrdering.class);
-    final var s =
-      Arbitraries.strings();
     final var i =
       Arbitraries.integers()
         .between(1, 1000);
+    final var s0 =
+      Arbitraries.strings()
+        .optional();
+    final var s1 =
+      Arbitraries.strings()
+        .optional();
+    final var u0 =
+      Arbitraries.defaultFor(UUID.class)
+        .optional();
 
     final var a =
-      Combinators.combine(t, t, s, o, i).as((t0, t1, ss, uo, in) -> {
-        return new IcTicketListParameters(
-          t0,
-          t1,
-          uo,
-          in.intValue()
-        );
-      });
+      Combinators.combine(t, t, o, i, s0, s1, u0)
+        .as((t0, t1, uo, in, ss0, ss1, uu0) -> {
+          return new IcTicketSearch(
+            t0,
+            t1,
+            uo,
+            in.intValue(),
+            ss0,
+            ss1,
+            uu0
+          );
+        });
 
     return Set.of(a);
   }

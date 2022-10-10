@@ -21,24 +21,28 @@ import java.util.Objects;
 /**
  * Information needed to create a ticket.
  *
- * @param project The project
- * @param title   The ticket title
+ * @param project     The project
+ * @param title       The ticket title
+ * @param description The ticket description
  */
 
 public record IcTicketCreation(
   IcProjectID project,
-  IcTicketTitle title)
+  IcTicketTitle title,
+  String description)
 {
   /**
    * Information needed to create a ticket.
    *
-   * @param project The project
-   * @param title   The ticket title
+   * @param project     The project
+   * @param title       The ticket title
+   * @param description The ticket description
    */
 
   public IcTicketCreation
   {
     Objects.requireNonNull(project, "project");
     Objects.requireNonNull(title, "title");
+    Objects.requireNonNull(description, "description");
   }
 }

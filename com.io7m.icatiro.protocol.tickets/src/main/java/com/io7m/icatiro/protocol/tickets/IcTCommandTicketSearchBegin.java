@@ -16,18 +16,18 @@
 
 package com.io7m.icatiro.protocol.tickets;
 
-import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.model.IcTicketSearch;
 
 import java.util.Objects;
 
 /**
  * Start searching/listing tickets.
  *
- * @param parameters The ticket list parameters
+ * @param search The ticket search parameters
  */
 
 public record IcTCommandTicketSearchBegin(
-  IcTicketListParameters parameters)
+  IcTicketSearch search)
   implements IcTCommandType<IcTResponseTicketSearchBegin>
 {
   /**
@@ -36,6 +36,6 @@ public record IcTCommandTicketSearchBegin(
 
   public IcTCommandTicketSearchBegin
   {
-    Objects.requireNonNull(parameters, "parameters");
+    Objects.requireNonNull(search, "search");
   }
 }

@@ -14,12 +14,13 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
 package com.io7m.icatiro.database.postgres.internal;
 
 import com.io7m.icatiro.database.api.IcDatabaseException;
+import com.io7m.icatiro.database.api.IcDatabaseTicketSearchType;
 import com.io7m.icatiro.database.api.IcDatabaseTicketsQueriesType;
 import com.io7m.icatiro.database.postgres.internal.tables.records.ProjectsRecord;
+import com.io7m.icatiro.model.IcPage;
 import com.io7m.icatiro.model.IcProjectID;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
@@ -27,29 +28,32 @@ import com.io7m.icatiro.model.IcProjectUniqueIdentifierType;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketCreation;
 import com.io7m.icatiro.model.IcTicketID;
+import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTicketTitle;
-import com.io7m.icatiro.model.IcTimeRange;
 import com.io7m.idstore.model.IdName;
+import com.io7m.jqpage.core.JQKeysetRandomAccessPageDefinition;
+import com.io7m.jqpage.core.JQKeysetRandomAccessPagination;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.SelectForUpdateStep;
-import org.jooq.SortField;
+import org.jooq.Field;
+import org.jooq.Record;
+import org.jooq.Select;
+import org.jooq.TableOnConditionStep;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 
 import static com.io7m.icatiro.database.postgres.internal.IcDatabaseExceptions.handleDatabaseException;
-import static com.io7m.icatiro.database.postgres.internal.IcDatabaseUsersQueries.USER_DOES_NOT_EXIST;
 import static com.io7m.icatiro.database.postgres.internal.Tables.AUDIT;
 import static com.io7m.icatiro.database.postgres.internal.Tables.TICKETS;
 import static com.io7m.icatiro.database.postgres.internal.Tables.USERS;
 import static com.io7m.icatiro.database.postgres.internal.tables.Projects.PROJECTS;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROJECT_NONEXISTENT;
 import static com.io7m.icatiro.model.IcPermission.TICKET_READ;
+import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_STATEMENT;
 import static java.lang.Long.toUnsignedString;
 import static java.lang.Long.valueOf;
 
@@ -141,6 +145,7 @@ final class IcDatabaseTicketsQueries
       newTicket.setProject(project.getId());
       newTicket.setReporter(userId);
       newTicket.setTitle(creation.title().value());
+      newTicket.setDescription(creation.description());
       newTicket.store();
 
       final var newId =
@@ -172,20 +177,11 @@ final class IcDatabaseTicketsQueries
   }
 
   @Override
-  public List<IcTicketSummary> ticketListWithPermissions(
-    final UUID userId,
-    final IcTimeRange timeCreatedRange,
-    final IcTimeRange timeUpdatedRange,
-    final IcTicketColumnOrdering ordering,
-    final int limit,
-    final Optional<Object> seek)
+  public IcDatabaseTicketSearchType ticketSearch(
+    final IcTicketSearch parameters)
     throws IcDatabaseException
   {
-    Objects.requireNonNull(userId, "userId");
-    Objects.requireNonNull(timeCreatedRange, "timeCreatedRange");
-    Objects.requireNonNull(timeUpdatedRange, "timeUpdatedRange");
-    Objects.requireNonNull(ordering, "ordering");
-    Objects.requireNonNull(seek, "seek");
+    Objects.requireNonNull(parameters, "parameters");
 
     final var transaction =
       this.transaction();
@@ -193,28 +189,16 @@ final class IcDatabaseTicketsQueries
       transaction.createContext();
     final var querySpan =
       transaction.createQuerySpan(
-        "IdDatabaseTicketsQueries.ticketListWithPermissions");
+        "IdDatabaseTicketsQueries.ticketSearch.create");
 
     try {
-      context.fetchOptional(USERS, USERS.ID.eq(userId))
-        .orElseThrow(USER_DOES_NOT_EXIST);
+      final var observer =
+        transaction.userId();
 
-      final var baseSelection =
-        context.select(
-          TICKETS.ID,
-          TICKETS.PROJECT,
-          TICKETS.TIME_CREATED,
-          TICKETS.TIME_UPDATED,
-          TICKETS.REPORTER,
-          TICKETS.TITLE,
-          USERS.NAME,
-          PROJECTS.NAME_DISPLAY,
-          PROJECTS.NAME_SHORT
-        ).from(
-          TICKETS
-            .join(PROJECTS).on(PROJECTS.ID.eq(TICKETS.PROJECT))
-            .join(USERS).on(USERS.ID.eq(TICKETS.REPORTER))
-        );
+      final var baseTable =
+        TICKETS
+          .join(PROJECTS).on(PROJECTS.ID.eq(TICKETS.PROJECT))
+          .join(USERS).on(USERS.ID.eq(TICKETS.REPORTER));
 
       /*
        * The permission condition is responsible for filtering out
@@ -224,7 +208,7 @@ final class IcDatabaseTicketsQueries
       final var permissionCondition =
         DSL.condition(
           "permission_is_allowed(?, TICKETS.PROJECT, TICKETS.ID, ?)",
-          userId,
+          observer,
           Integer.valueOf(TICKET_READ.value())
         );
 
@@ -232,41 +216,81 @@ final class IcDatabaseTicketsQueries
        * The tickets must lie within the given time ranges.
        */
 
+      final var timeCreatedRange = parameters.timeCreatedRange();
       final var timeCreatedCondition =
         DSL.condition(
           TICKETS.TIME_CREATED.ge(timeCreatedRange.timeLower())
             .and(TICKETS.TIME_CREATED.le(timeCreatedRange.timeUpper()))
         );
 
+      final var timeUpdatedRange = parameters.timeUpdatedRange();
       final var timeUpdatedCondition =
         DSL.condition(
-          TICKETS.TIME_UPDATED.ge(timeCreatedRange.timeLower())
-            .and(TICKETS.TIME_UPDATED.le(timeCreatedRange.timeUpper()))
+          TICKETS.TIME_UPDATED.ge(timeUpdatedRange.timeLower())
+            .and(TICKETS.TIME_UPDATED.le(timeUpdatedRange.timeUpper()))
         );
 
-      final var allConditions =
-        permissionCondition
-          .and(timeCreatedCondition)
-          .and(timeUpdatedCondition);
-
-      final var baseOrdering =
-        baseSelection.where(allConditions)
-          .orderBy(List.of(orderField(ordering)));
+      Condition whereCondition = permissionCondition;
+      whereCondition = whereCondition.and(timeCreatedCondition);
+      whereCondition = whereCondition.and(timeUpdatedCondition);
 
       /*
-       * If a seek is specified, then seek!
+       * Filter by reporter if requested.
        */
 
-      final SelectForUpdateStep<?> next;
-      if (seek.isPresent()) {
-        final var page = seek.get();
-        next = baseOrdering.seek(page).limit(Integer.valueOf(limit));
-      } else {
-        next = baseOrdering.limit(Integer.valueOf(limit));
+      final var reporterOpt = parameters.reporter();
+      if (reporterOpt.isPresent()) {
+        whereCondition =
+          whereCondition.and(TICKETS.REPORTER.eq(reporterOpt.get()));
       }
 
-      return next.fetch()
-        .map(IcDatabaseTicketsQueries::mapTicketWithPermissions);
+      /*
+       * Do fulltext title and description searches if requested.
+       */
+
+      final var titleOpt = parameters.titleSearch();
+      if (titleOpt.isPresent()) {
+        whereCondition =
+          whereCondition.and(
+            DSL.condition(
+              "? @@ to_tsquery('english', ?)",
+              TICKETS.TITLE,
+              titleOpt.get()
+            )
+          );
+      }
+
+      final var descriptionOpt = parameters.descriptionSearch();
+      if (descriptionOpt.isPresent()) {
+        whereCondition =
+          whereCondition.and(
+            DSL.condition(
+              "? @@ to_tsquery('english', ?)",
+              TICKETS.DESCRIPTION,
+              descriptionOpt.get()
+            )
+          );
+      }
+
+      final var query =
+        baseTable.where(whereCondition);
+
+      final var pages =
+        JQKeysetRandomAccessPagination.createPageDefinitions(
+          context,
+          query,
+          List.of(orderField(parameters.ordering())),
+          Integer.toUnsignedLong(parameters.limit()),
+          statement -> {
+            querySpan.setAttribute(DB_STATEMENT, statement.toString());
+          }
+        );
+
+      return new TicketSearch(
+        baseTable,
+        whereCondition,
+        pages
+      );
     } catch (final DataAccessException e) {
       querySpan.recordException(e);
       throw handleDatabaseException(transaction, e);
@@ -275,91 +299,84 @@ final class IcDatabaseTicketsQueries
     }
   }
 
-  private static SortField<?> orderField(
+  private static final class TicketSearch
+    extends IcAbstractSearch<IcDatabaseTicketsQueries, IcDatabaseTicketsQueriesType, IcTicketSummary>
+    implements IcDatabaseTicketSearchType
+  {
+    private final TableOnConditionStep<Record> baseTable;
+    private final Condition whereCondition;
+
+    TicketSearch(
+      final TableOnConditionStep<Record> inBaseTable,
+      final Condition inWhereCondition,
+      final List<JQKeysetRandomAccessPageDefinition> pages)
+    {
+      super(pages);
+
+      this.baseTable =
+        Objects.requireNonNull(inBaseTable, "baseTable");
+      this.whereCondition =
+        Objects.requireNonNull(inWhereCondition, "whereCondition");
+    }
+
+    @Override
+    protected IcPage<IcTicketSummary> page(
+      final IcDatabaseTicketsQueries queries,
+      final JQKeysetRandomAccessPageDefinition page)
+      throws IcDatabaseException
+    {
+      final var transaction =
+        queries.transaction();
+      final var context =
+        transaction.createContext();
+
+      final var querySpan =
+        transaction.createQuerySpan(
+          "IdDatabaseTicketsQueries.ticketSearch.page");
+
+      try {
+        final var query =
+          context.selectFrom(this.baseTable)
+            .where(this.whereCondition)
+            .orderBy(page.orderBy());
+
+        final var seek = page.seek();
+        final Select<?> select;
+        if (seek.length != 0) {
+          select = query.seek(seek).limit(valueOf(page.limit()));
+        } else {
+          select = query.limit(valueOf(page.limit()));
+        }
+
+        querySpan.setAttribute(DB_STATEMENT, select.toString());
+
+        final var items =
+          select.fetch()
+            .map(IcDatabaseTicketsQueries::mapTicketWithPermissions);
+
+        return new IcPage<>(
+          items,
+          (int) page.index(),
+          this.pageCount(),
+          page.firstOffset()
+        );
+      } catch (final DataAccessException e) {
+        querySpan.recordException(e);
+        throw handleDatabaseException(transaction, e);
+      } finally {
+        querySpan.end();
+      }
+    }
+  }
+
+  private static Field<?> orderField(
     final IcTicketColumnOrdering ordering)
   {
-    final var field =
-      switch (ordering.column()) {
-        case BY_ID -> TICKETS.ID;
-        case BY_TITLE -> TICKETS.TITLE;
-        case BY_TIME_CREATED -> TICKETS.TIME_CREATED;
-        case BY_TIME_UPDATED -> TICKETS.TIME_UPDATED;
-      };
-    return ordering.ascending() ? field.asc() : field.desc();
-  }
-
-  @Override
-  public long ticketListCountWithPermissions(
-    final UUID userId,
-    final IcTimeRange timeCreatedRange,
-    final IcTimeRange timeUpdatedRange)
-    throws IcDatabaseException
-  {
-    Objects.requireNonNull(userId, "userId");
-    Objects.requireNonNull(timeCreatedRange, "timeCreatedRange");
-    Objects.requireNonNull(timeUpdatedRange, "timeUpdatedRange");
-
-    final var transaction =
-      this.transaction();
-    final var context =
-      transaction.createContext();
-    final var querySpan =
-      transaction.createQuerySpan(
-        "IdDatabaseTicketsQueries.ticketListCountWithPermissions");
-
-    try {
-      context.fetchOptional(USERS, USERS.ID.eq(userId))
-        .orElseThrow(USER_DOES_NOT_EXIST);
-
-      final var baseSelection =
-        context.selectCount()
-          .from(
-            TICKETS
-              .join(PROJECTS).on(PROJECTS.ID.eq(TICKETS.PROJECT))
-              .join(USERS).on(USERS.ID.eq(TICKETS.REPORTER))
-          );
-
-      /*
-       * The permission condition is responsible for filtering out
-       * tickets with which the user has no permission to read.
-       */
-
-      final var permissionCondition =
-        DSL.condition(
-          "permission_is_allowed(?, TICKETS.PROJECT, TICKETS.ID, ?)",
-          userId,
-          Integer.valueOf(TICKET_READ.value())
-        );
-
-      /*
-       * The tickets must lie within the given time ranges.
-       */
-
-      final var timeCreatedCondition =
-        DSL.condition(
-          TICKETS.TIME_CREATED.ge(timeCreatedRange.timeLower())
-            .and(TICKETS.TIME_CREATED.le(timeCreatedRange.timeUpper()))
-        );
-
-      final var timeUpdatedCondition =
-        DSL.condition(
-          TICKETS.TIME_UPDATED.ge(timeCreatedRange.timeLower())
-            .and(TICKETS.TIME_UPDATED.le(timeCreatedRange.timeUpper()))
-        );
-
-      final var allConditions =
-        permissionCondition
-          .and(timeCreatedCondition)
-          .and(timeUpdatedCondition);
-
-      return baseSelection.where(allConditions)
-        .fetchOneInto(int.class)
-        .longValue();
-    } catch (final DataAccessException e) {
-      querySpan.recordException(e);
-      throw handleDatabaseException(transaction, e);
-    } finally {
-      querySpan.end();
-    }
+    return switch (ordering.column()) {
+      case BY_ID -> TICKETS.ID;
+      case BY_TITLE -> TICKETS.TITLE;
+      case BY_TIME_CREATED -> TICKETS.TIME_CREATED;
+      case BY_TIME_UPDATED -> TICKETS.TIME_UPDATED;
+    };
   }
 }

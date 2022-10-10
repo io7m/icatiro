@@ -30,6 +30,7 @@ module com.io7m.icatiro.database.postgres
 
   requires com.io7m.anethum.common;
   requires com.io7m.jaffirm.core;
+  requires com.io7m.jqpage.core;
   requires com.io7m.trasco.api;
   requires com.io7m.trasco.vanilla;
   requires com.zaxxer.hikari;

@@ -14,10 +14,16 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+package com.io7m.icatiro.database.api;
 
-package com.io7m.icatiro.database.postgres.internal;
+import com.io7m.icatiro.model.IcTicketSummary;
 
-interface IcDatabasePaginatedQueryType<T>
+/**
+ * The type of ticket searches.
+ */
+
+public interface IcDatabaseTicketSearchType
+  extends IcDatabasePagedQueryType<IcDatabaseTicketsQueriesType, IcTicketSummary>
 {
 
 }

@@ -14,17 +14,17 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.icatiro.database.postgres.internal;
 
-import java.util.List;
-import java.util.Objects;
+package com.io7m.icatiro.database.api;
 
-record IcDatabasePageDefinition(
-  List<Object> record,
-  int pageNumber)
+import com.io7m.icatiro.model.IcAuditEvent;
+
+/**
+ * The type of audit event searches.
+ */
+
+public interface IcDatabaseAuditEventsSearchType
+  extends IcDatabasePagedQueryType<IcDatabaseAuditQueriesType, IcAuditEvent>
 {
-  IcDatabasePageDefinition
-  {
-    Objects.requireNonNull(record, "record");
-  }
+
 }

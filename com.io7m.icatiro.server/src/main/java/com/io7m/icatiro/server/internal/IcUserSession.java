@@ -16,14 +16,13 @@
 
 package com.io7m.icatiro.server.internal;
 
-import com.io7m.icatiro.database.api.IcDatabaseTicketListPaging;
-import com.io7m.icatiro.database.api.IcDatabaseTicketListPagingType;
-import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.database.api.IcDatabaseTicketSearchType;
 import com.io7m.icatiro.model.IcUser;
 import com.io7m.idstore.user_client.api.IdUClientType;
 import jakarta.servlet.http.HttpSession;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * A controller for a single user session.
@@ -35,7 +34,7 @@ public final class IcUserSession
   private final HttpSession httpSession;
   private final IdUClientType idClient;
   private final IcUser user;
-  private IcDatabaseTicketListPagingType tickets;
+  private Optional<IcDatabaseTicketSearchType> tickets;
 
   /**
    * A controller for a single user session.
@@ -57,17 +56,14 @@ public final class IcUserSession
     this.idClient =
       Objects.requireNonNull(inIdClient, "inIdClient");
     this.tickets =
-      IcDatabaseTicketListPaging.create(
-        this.user.id(),
-        IcTicketListParameters.defaults()
-      );
+      Optional.empty();
   }
 
   /**
    * @return The ticket paging object
    */
 
-  public IcDatabaseTicketListPagingType tickets()
+  public Optional<IcDatabaseTicketSearchType> ticketSearch()
   {
     return this.tickets;
   }
@@ -80,20 +76,16 @@ public final class IcUserSession
   }
 
   /**
-   * Set the new ticket parameters.
+   * Set the new ticket search.
    *
-   * @param parameters The ticket parameters
-   *
-   * @return The ticket pager
+   * @param search The ticket search
    */
 
-  public IcDatabaseTicketListPagingType setTicketParameters(
-    final IcTicketListParameters parameters)
+  public void setTicketParameters(
+    final IcDatabaseTicketSearchType search)
   {
-    this.tickets = IcDatabaseTicketListPaging.create(
-      this.user.id(),
-      parameters);
-    return this.tickets;
+    this.tickets =
+      Optional.of(Objects.requireNonNull(search, "search"));
   }
 
   /**

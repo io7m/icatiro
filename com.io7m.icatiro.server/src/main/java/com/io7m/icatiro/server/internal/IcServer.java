@@ -368,11 +368,11 @@ public final class IcServer implements IcServerType
     );
     servlets.addServlet(
       servletHolders.create(IcT1Login.class, IcT1Login::new),
-      "/tickets/1/0/login"
+      "/ticketSearch/1/0/login"
     );
     servlets.addServlet(
       servletHolders.create(IcT1CommandServlet.class, IcT1CommandServlet::new),
-      "/tickets/1/0/command"
+      "/ticketSearch/1/0/command"
     );
 
     servlets.addEventListener(

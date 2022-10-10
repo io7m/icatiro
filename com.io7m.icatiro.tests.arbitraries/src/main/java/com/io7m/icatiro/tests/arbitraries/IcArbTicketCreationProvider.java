@@ -56,7 +56,8 @@ public final class IcArbTicketCreationProvider extends IcArbAbstractProvider
     return Set.of(
       Combinators.combine(
         Arbitraries.defaultFor(IcProjectID.class),
-        Arbitraries.defaultFor(IcTicketTitle.class)
+        Arbitraries.defaultFor(IcTicketTitle.class),
+        Arbitraries.strings()
       ).as(IcTicketCreation::new)
     );
   }

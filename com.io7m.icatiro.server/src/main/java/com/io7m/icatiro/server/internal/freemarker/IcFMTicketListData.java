@@ -49,7 +49,7 @@ public record IcFMTicketListData(
   {
     Objects.requireNonNull(htmlTitle, "htmlTitle");
     Objects.requireNonNull(pageHeaderTitle, "pageHeaderTitle");
-    Objects.requireNonNull(tickets, "tickets");
+    Objects.requireNonNull(tickets, "ticketSearch");
   }
 
   @Override
@@ -58,7 +58,7 @@ public record IcFMTicketListData(
     final var m = new HashMap<String, Object>();
     m.put("htmlTitle", this.htmlTitle());
     m.put("pageHeaderTitle", this.pageHeaderTitle);
-    m.put("tickets", this.tickets());
+    m.put("ticketSearch", this.tickets());
     return m;
   }
 }

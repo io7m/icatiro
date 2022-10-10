@@ -16,12 +16,9 @@
 
 package com.io7m.icatiro.database.api;
 
-import com.io7m.icatiro.model.IcAuditEvent;
 import com.io7m.icatiro.model.IcAuditSearchParameters;
 
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.OptionalLong;
 import java.util.UUID;
 
 /**
@@ -35,22 +32,20 @@ public non-sealed interface IcDatabaseAuditQueriesType
    * Retrieve all audit events from the database matching the given parameters.
    *
    * @param parameters The search parameters
-   * @param seek       The record to which to seek, if any
    *
    * @return A series of audit events, sorted by time
    *
    * @throws IcDatabaseException On errors
    */
 
-  List<IcAuditEvent> auditEvents(
-    IcAuditSearchParameters parameters,
-    OptionalLong seek)
+  IcDatabaseAuditEventsSearchType auditEventsSearch(
+    IcAuditSearchParameters parameters)
     throws IcDatabaseException;
 
   /**
    * Create an audit event.
    *
-   * @param userIc  The user ID of the event
+   * @param userId  The user ID of the event
    * @param time    The event time
    * @param type    The event type
    * @param message The event message
@@ -59,19 +54,9 @@ public non-sealed interface IcDatabaseAuditQueriesType
    */
 
   void auditPut(
-    UUID userIc,
+    UUID userId,
     OffsetDateTime time,
     String type,
     String message)
     throws IcDatabaseException;
-
-  /**
-   * @param parameters The parameters
-   *
-   * @return The number of events matching the given parameter
-   */
-
-  long auditCount(IcAuditSearchParameters parameters)
-    throws IcDatabaseException;
-
 }

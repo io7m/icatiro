@@ -19,11 +19,13 @@ package com.io7m.icatiro.server.internal.tickets;
 
 import com.io7m.icatiro.database.api.IcDatabaseException;
 import com.io7m.icatiro.database.api.IcDatabaseTicketsQueriesType;
-import com.io7m.icatiro.model.IcPage;
 import com.io7m.icatiro.model.IcValidityException;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTResponseType;
+import com.io7m.icatiro.server.internal.command_exec.IcCommandExecutionFailure;
+
+import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROTOCOL_ERROR;
 
 /**
  * {@code IcTCommandTicketSearchNext}
@@ -45,27 +47,31 @@ public final class IcTCmdTicketSearchNext
   protected IcTResponseType executeActual(
     final IcTCommandContext context,
     final IcTCommandTicketSearchNext command)
-    throws IcValidityException, IcDatabaseException
+    throws IcValidityException, IcDatabaseException, IcCommandExecutionFailure
   {
     final var session =
       context.userSession();
-    final var tickets =
-      context.transaction()
-        .queries(IcDatabaseTicketsQueriesType.class);
+    final var transaction =
+      context.transaction();
+    final var ticketQueries =
+      transaction.queries(IcDatabaseTicketsQueriesType.class);
 
-    final var ticketPager =
-      session.tickets();
+    final var ticketSearchOpt =
+      session.ticketSearch();
+
+    if (ticketSearchOpt.isEmpty()) {
+      throw context.failFormatted(
+        400, PROTOCOL_ERROR, "errorSearchFirst");
+    }
+
+    final var ticketSearch =
+      ticketSearchOpt.get();
+
+    transaction.userIdSet(session.user().id());
+
     final var page =
-      ticketPager.pageNext(tickets);
+      ticketSearch.pageNext(ticketQueries);
 
-    return new IcTResponseTicketSearchNext(
-      context.requestId(),
-      new IcPage<>(
-        page,
-        ticketPager.pageNumber(),
-        ticketPager.pageCount(),
-        ticketPager.pageFirstOffset()
-      )
-    );
+    return new IcTResponseTicketSearchNext(context.requestId(), page);
   }
 }

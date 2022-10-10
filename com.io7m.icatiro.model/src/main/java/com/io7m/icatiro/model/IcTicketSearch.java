@@ -17,15 +17,12 @@
 
 package com.io7m.icatiro.model;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.Objects;
-
-import static com.io7m.icatiro.model.IcTicketColumn.BY_ID;
-import static java.time.ZoneOffset.UTC;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
- * The immutable parameters required to list tickets.
+ * The immutable parameters required to search tickets.
  *
  * @param timeCreatedRange Only tickets created within this time range are
  *                         returned
@@ -33,16 +30,22 @@ import static java.time.ZoneOffset.UTC;
  *                         returned
  * @param ordering         The ordering specification
  * @param limit            The limit on the number of returned tickets
+ * @param titleSearch      The title search query
+ * @param descriptionSearch       The text search query
+ * @param reporter         The reporter, if any
  */
 
-public record IcTicketListParameters(
+public record IcTicketSearch(
   IcTimeRange timeCreatedRange,
   IcTimeRange timeUpdatedRange,
   IcTicketColumnOrdering ordering,
-  int limit)
+  int limit,
+  Optional<String> titleSearch,
+  Optional<String> descriptionSearch,
+  Optional<UUID> reporter)
 {
   /**
-   * The immutable parameters required to list tickets.
+   * The immutable parameters required to search tickets.
    *
    * @param timeCreatedRange Only tickets created within this time range are
    *                         returned
@@ -50,30 +53,18 @@ public record IcTicketListParameters(
    *                         returned
    * @param ordering         The ordering specification
    * @param limit            The limit on the number of returned tickets
+   * @param titleSearch      The title search query
+   * @param descriptionSearch       The text search query
+   * @param reporter         The reporter, if any
    */
 
-  public IcTicketListParameters
+  public IcTicketSearch
   {
     Objects.requireNonNull(timeCreatedRange, "timeCreatedRange");
     Objects.requireNonNull(timeUpdatedRange, "timeUpdatedRange");
     Objects.requireNonNull(ordering, "ordering");
-  }
-
-  private static final OffsetDateTime DEFAULT_TIME_LOW =
-    Instant.ofEpochSecond(0L).atOffset(UTC);
-
-  /**
-   * @return Reasonable default parameters
-   */
-
-  public static IcTicketListParameters defaults()
-  {
-    final var now = OffsetDateTime.now();
-    return new IcTicketListParameters(
-      new IcTimeRange(DEFAULT_TIME_LOW, now.plusDays(1L)),
-      new IcTimeRange(DEFAULT_TIME_LOW, now.plusDays(1L)),
-      new IcTicketColumnOrdering(BY_ID, false),
-      20
-    );
+    Objects.requireNonNull(titleSearch, "titleSearch");
+    Objects.requireNonNull(descriptionSearch, "textSearch");
+    Objects.requireNonNull(reporter, "reporter");
   }
 }

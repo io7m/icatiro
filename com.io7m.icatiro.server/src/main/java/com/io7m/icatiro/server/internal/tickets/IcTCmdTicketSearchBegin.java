@@ -19,7 +19,6 @@ package com.io7m.icatiro.server.internal.tickets;
 
 import com.io7m.icatiro.database.api.IcDatabaseException;
 import com.io7m.icatiro.database.api.IcDatabaseTicketsQueriesType;
-import com.io7m.icatiro.model.IcPage;
 import com.io7m.icatiro.model.IcValidityException;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchBegin;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchBegin;
@@ -49,24 +48,22 @@ public final class IcTCmdTicketSearchBegin
   {
     final var session =
       context.userSession();
-    final var tickets =
-      context.transaction()
+    final var transaction =
+      context.transaction();
+    final var ticketQueries =
+      transaction
         .queries(IcDatabaseTicketsQueriesType.class);
 
-    final var ticketPager =
-      session.setTicketParameters(command.parameters());
+    transaction.userIdSet(session.user().id());
 
-    final var pageCurrent =
-      ticketPager.pageCurrent(tickets);
+    final var search =
+      ticketQueries.ticketSearch(command.search());
 
-    return new IcTResponseTicketSearchBegin(
-      context.requestId(),
-      new IcPage<>(
-        pageCurrent,
-        ticketPager.pageNumber(),
-        ticketPager.pageCount(),
-        ticketPager.pageFirstOffset()
-      )
-    );
+    session.setTicketParameters(search);
+
+    final var page =
+      search.pageCurrent(ticketQueries);
+
+    return new IcTResponseTicketSearchBegin(context.requestId(), page);
   }
 }

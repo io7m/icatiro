@@ -62,7 +62,7 @@ public final class IcT1Versions extends HttpServlet
         IcT1Messages.protocolId(),
         1L,
         0L,
-        "/tickets/1/0/"
+        "/ticketSearch/1/0/"
       )
     );
     return new VProtocols(List.copyOf(supported));

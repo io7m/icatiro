@@ -16,6 +16,7 @@
 
 package com.io7m.icatiro.protocol.tickets.cb;
 
+import com.io7m.cedarbridge.runtime.api.CBCore;
 import com.io7m.cedarbridge.runtime.api.CBIntegerUnsigned32;
 import com.io7m.cedarbridge.runtime.api.CBIntegerUnsigned64;
 import com.io7m.cedarbridge.runtime.api.CBIntegerUnsigned8;
@@ -37,7 +38,7 @@ import com.io7m.icatiro.model.IcTicketColumn;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
 import com.io7m.icatiro.model.IcTicketCreation;
 import com.io7m.icatiro.model.IcTicketID;
-import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTicketTitle;
 import com.io7m.icatiro.model.IcTimeRange;
@@ -76,6 +77,7 @@ import static com.io7m.cedarbridge.runtime.api.CBBooleanType.fromBoolean;
 import static com.io7m.cedarbridge.runtime.api.CBCore.string;
 import static com.io7m.cedarbridge.runtime.api.CBCore.unsigned16;
 import static com.io7m.cedarbridge.runtime.api.CBCore.unsigned64;
+import static com.io7m.cedarbridge.runtime.api.CBOptionType.fromOptional;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROTOCOL_ERROR;
 import static com.io7m.icatiro.protocol.tickets.cb.Ic1TicketColumn.ByID;
 import static com.io7m.icatiro.protocol.tickets.cb.Ic1TicketColumn.ByTimeCreated;
@@ -392,7 +394,8 @@ public final class IcT1Validation
   {
     return new Ic1CommandTicketCreate(
       unsigned64(cc.creation().project().value()),
-      string(cc.creation().title().value())
+      string(cc.creation().title().value()),
+      string(cc.creation().description())
     );
   }
 
@@ -421,28 +424,21 @@ public final class IcT1Validation
     final IcTCommandTicketSearchBegin cc)
   {
     return new Ic1CommandTicketSearchBegin(
-      toWireTicketSearchParameters(cc.parameters())
+      toWireTicketSearch(cc.search())
     );
   }
 
-  private static Ic1TicketSearchParameters toWireTicketSearchParameters(
-    final IcTicketListParameters p)
+  private static Ic1TicketSearchParameters toWireTicketSearch(
+    final IcTicketSearch p)
   {
     return new Ic1TicketSearchParameters(
       toWireTimeRange(p.timeCreatedRange()),
       toWireTimeRange(p.timeUpdatedRange()),
       toWireTicketColumnOrdering(p.ordering()),
-      unsigned16(p.limit())
-    );
-  }
-
-  private static CBList<Ic1TicketColumnOrdering> toWireTicketColumnOrderings(
-    final List<IcTicketColumnOrdering> ordering)
-  {
-    return new CBList<>(
-      ordering.stream()
-        .map(IcT1Validation::toWireTicketColumnOrdering)
-        .toList()
+      unsigned16(p.limit()),
+      fromOptional(p.titleSearch().map(CBCore::string)),
+      fromOptional(p.descriptionSearch().map(CBCore::string)),
+      fromOptional(p.reporter().map(IcT1Validation::toWireUUID))
     );
   }
 
@@ -577,7 +573,8 @@ public final class IcT1Validation
     return new IcTCommandTicketCreate(
       new IcTicketCreation(
         new IcProjectID(m.fieldProject().value()),
-        new IcTicketTitle(m.fieldTitle().value())
+        new IcTicketTitle(m.fieldTitle().value()),
+        m.fieldDescription().value()
       )
     );
   }
@@ -817,18 +814,21 @@ public final class IcT1Validation
     final Ic1CommandTicketSearchBegin m)
   {
     return new IcTCommandTicketSearchBegin(
-      fromWireTicketListParameters(m.fieldParameters())
+      fromWireTicketSearch(m.fieldParameters())
     );
   }
 
-  private static IcTicketListParameters fromWireTicketListParameters(
+  private static IcTicketSearch fromWireTicketSearch(
     final Ic1TicketSearchParameters p)
   {
-    return new IcTicketListParameters(
+    return new IcTicketSearch(
       fromWireTimeRange(p.fieldTimeCreatedRange()),
       fromWireTimeRange(p.fieldTimeUpdatedRange()),
       fromWireColumnOrdering(p.fieldOrdering()),
-      p.fieldLimit().value()
+      p.fieldLimit().value(),
+      p.fieldTitleSearch().asOptional().map(CBString::value),
+      p.fieldDescriptionSearch().asOptional().map(CBString::value),
+      p.fieldReporter().asOptional().map(IcT1Validation::fromWireUUID)
     );
   }
 

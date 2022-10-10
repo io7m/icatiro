@@ -14,46 +14,58 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+
 package com.io7m.icatiro.database.api;
 
-import com.io7m.icatiro.model.IcTicketCreation;
-import com.io7m.icatiro.model.IcTicketSearch;
-import com.io7m.icatiro.model.IcTicketSummary;
+import com.io7m.icatiro.model.IcPage;
 
 /**
- * The database queries involving tickets.
+ * The type of paged queries.
+ *
+ * @param <Q> The type of required query interfaces
+ * @param <T> The type of result values
  */
 
-public non-sealed interface IcDatabaseTicketsQueriesType
-  extends IcDatabaseQueriesType
+public interface IcDatabasePagedQueryType<Q extends IcDatabaseQueriesType, T>
 {
   /**
-   * Search for tickets.
+   * Get data for the current page.
    *
-   * @param parameters The search parameters
+   * @param queries The query interface
    *
-   * @return The ticket summaries as a paginated query
+   * @return A page of results
    *
    * @throws IcDatabaseException On errors
    */
 
-  @IcDatabaseRequiresUser
-  IcDatabaseTicketSearchType ticketSearch(
-    IcTicketSearch parameters)
+  IcPage<T> pageCurrent(Q queries)
     throws IcDatabaseException;
 
   /**
-   * Create a new ticket.
+   * Get data for the next page. If the current page is the last page, the
+   * function acts as {@link #pageCurrent(IcDatabaseQueriesType)}.
    *
-   * @param creation The creation information
+   * @param queries The query interface
    *
-   * @return The new project
+   * @return A page of results
    *
    * @throws IcDatabaseException On errors
    */
 
-  @IcDatabaseRequiresUser
-  IcTicketSummary ticketCreate(
-    IcTicketCreation creation)
+  IcPage<T> pageNext(Q queries)
+    throws IcDatabaseException;
+
+  /**
+   * Get data for the previous page. If the current page is the first page, the
+   * function acts as {@link #pageCurrent(IcDatabaseQueriesType)}.
+   *
+   * @param queries The query interface
+   *
+   * @return A page of results
+   *
+   * @throws IcDatabaseException On errors
+   */
+
+  IcPage<T> pagePrevious(Q queries)
     throws IcDatabaseException;
 }

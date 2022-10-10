@@ -18,7 +18,7 @@ package com.io7m.icatiro.client.api;
 
 import com.io7m.icatiro.model.IcPage;
 import com.io7m.icatiro.model.IcTicketCreation;
-import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 
 /**
@@ -53,7 +53,7 @@ public interface IcClientTicketsType
    */
 
   IcPage<IcTicketSummary> ticketSearchBegin(
-    IcTicketListParameters parameters)
+    IcTicketSearch parameters)
     throws IcClientException, InterruptedException;
 
   /**

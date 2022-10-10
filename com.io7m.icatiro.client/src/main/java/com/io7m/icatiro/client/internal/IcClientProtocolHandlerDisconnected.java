@@ -23,7 +23,7 @@ import com.io7m.icatiro.model.IcProject;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
 import com.io7m.icatiro.model.IcTicketCreation;
-import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 
 import java.net.URI;
@@ -103,7 +103,7 @@ public final class IcClientProtocolHandlerDisconnected
 
   @Override
   public IcPage<IcTicketSummary> ticketSearchBegin(
-    final IcTicketListParameters parameters)
+    final IcTicketSearch parameters)
     throws IcClientException
   {
     throw this.notLoggedIn();

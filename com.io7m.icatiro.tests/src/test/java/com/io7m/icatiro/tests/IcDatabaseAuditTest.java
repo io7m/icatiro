@@ -19,6 +19,7 @@ package com.io7m.icatiro.tests;
 
 import com.io7m.icatiro.database.api.IcDatabaseAuditQueriesType;
 import com.io7m.icatiro.database.api.IcDatabaseUsersQueriesType;
+import com.io7m.icatiro.model.IcAuditEvent;
 import com.io7m.icatiro.model.IcAuditSearchParameters;
 import com.io7m.icatiro.model.IcPermissionSet;
 import com.io7m.icatiro.model.IcTimeRange;
@@ -29,8 +30,9 @@ import org.junit.jupiter.api.Test;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public final class IcDatabaseAuditTest extends IcWithDatabaseContract
 {
@@ -53,17 +55,110 @@ public final class IcDatabaseAuditTest extends IcWithDatabaseContract
       ));
 
       for (int index = 0; index < 1000; ++index) {
-        q.auditPut(uid, OffsetDateTime.now(), "T", Integer.toUnsignedString(index));
+        q.auditPut(
+          uid,
+          OffsetDateTime.now(),
+          "T",
+          Integer.toUnsignedString(index));
       }
 
-      q.auditEvents(new IcAuditSearchParameters(
-        IcTimeRange.largest(),
-        Optional.empty(),
-        Optional.empty(),
-        Optional.empty(),
-        100
-      ), OptionalLong.empty());
+      final var parameters =
+        new IcAuditSearchParameters(
+          IcTimeRange.largest(),
+          Optional.empty(),
+          Optional.empty(),
+          Optional.empty(),
+          300
+        );
+
+      final var search =
+        q.auditEventsSearch(parameters);
+
+      {
+        final var page = search.pageCurrent(q);
+        assertEquals(1, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(300, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
+      {
+        final var page = search.pageNext(q);
+        assertEquals(2, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(300, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
+      {
+        final var page = search.pageNext(q);
+        assertEquals(3, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(300, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
+      {
+        final var page = search.pageNext(q);
+        assertEquals(4, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(100, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
+      {
+        final var page = search.pageNext(q);
+        assertEquals(4, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(100, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
+      {
+        final var page = search.pagePrevious(q);
+        assertEquals(3, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(300, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
+      {
+        final var page = search.pagePrevious(q);
+        assertEquals(2, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(300, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
+      {
+        final var page = search.pagePrevious(q);
+        assertEquals(1, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(300, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
+      {
+        final var page = search.pagePrevious(q);
+        assertEquals(1, page.pageIndex());
+        assertEquals(4, page.pageCount());
+        assertEquals(300, page.items().size());
+        checkAuditEvents(page.pageFirstOffset(), page.items());
+      }
+
       return null;
     });
+  }
+
+  private static void checkAuditEvents(
+    final long start,
+    final List<IcAuditEvent> items)
+  {
+    for (int index = 0; index < items.size(); ++index) {
+      assertEquals(
+        Integer.toUnsignedString((int) (start + index)),
+        items.get(index).message()
+      );
+    }
   }
 }

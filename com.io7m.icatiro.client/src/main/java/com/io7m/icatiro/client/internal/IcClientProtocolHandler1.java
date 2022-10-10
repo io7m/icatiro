@@ -25,7 +25,7 @@ import com.io7m.icatiro.model.IcProject;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
 import com.io7m.icatiro.model.IcTicketCreation;
-import com.io7m.icatiro.model.IcTicketListParameters;
+import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.protocol.IcProtocolException;
 import com.io7m.icatiro.protocol.tickets.IcTCommandLogin;
@@ -259,7 +259,7 @@ public final class IcClientProtocolHandler1
 
   @Override
   public IcPage<IcTicketSummary> ticketSearchBegin(
-    final IcTicketListParameters parameters)
+    final IcTicketSearch parameters)
     throws IcClientException, InterruptedException
   {
     return this.sendCommand(
