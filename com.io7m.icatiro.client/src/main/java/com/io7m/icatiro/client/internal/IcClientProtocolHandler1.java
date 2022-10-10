@@ -64,6 +64,7 @@ import java.net.http.HttpRequest;
 import java.util.Objects;
 import java.util.UUID;
 
+import static com.io7m.icatiro.client.internal.IcCompression.decompressResponse;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.IO_ERROR;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROTOCOL_ERROR;
 import static com.io7m.idstore.error_codes.IdStandardErrorCodes.AUTHENTICATION_ERROR;
@@ -183,7 +184,7 @@ public final class IcClientProtocolHandler1
       }
 
       final var responseMessage =
-        this.messages.parse(IcCompression.decompressResponse(response, responseHeaders));
+        this.messages.parse(decompressResponse(response, responseHeaders));
 
       if (!(responseMessage instanceof IcTResponseType)) {
         throw new IcClientException(

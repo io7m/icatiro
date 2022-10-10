@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+import static com.io7m.icatiro.client.internal.IcCompression.decompressResponse;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.HTTP_ERROR;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.IO_ERROR;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.NO_SUPPORTED_PROTOCOLS;
@@ -95,9 +96,7 @@ public final class IcProtocolNegotiation
 
     final VProtocols message;
     try {
-      final var body =
-        IcCompression.decompressResponse(response, response.headers());
-
+      final var body = decompressResponse(response, response.headers());
       message = protocols.parse(base, body);
     } catch (final VProtocolException e) {
       throw new IcClientException(PROTOCOL_ERROR, e);
