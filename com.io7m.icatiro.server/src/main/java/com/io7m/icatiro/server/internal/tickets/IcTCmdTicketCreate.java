@@ -14,11 +14,12 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-
 package com.io7m.icatiro.server.internal.tickets;
 
 import com.io7m.icatiro.database.api.IcDatabaseException;
 import com.io7m.icatiro.database.api.IcDatabaseTicketsQueriesType;
+import com.io7m.icatiro.database.api.IcDatabaseUsersQueriesType;
+import com.io7m.icatiro.model.IcPermissionTicketwide;
 import com.io7m.icatiro.model.IcValidityException;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCreate;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCreate;
@@ -26,6 +27,8 @@ import com.io7m.icatiro.protocol.tickets.IcTResponseType;
 import com.io7m.icatiro.server.internal.IcSecurityException;
 
 import static com.io7m.icatiro.model.IcPermission.TICKET_CREATE;
+import static com.io7m.icatiro.model.IcPermission.TICKET_READ;
+import static com.io7m.icatiro.model.IcPermission.TICKET_WRITE;
 
 /**
  * {@code IcTCommandTicketCreate}
@@ -53,13 +56,41 @@ public final class IcTCmdTicketCreate
       context.transaction();
     final var tickets =
       transaction.queries(IcDatabaseTicketsQueriesType.class);
+    final var users =
+      transaction.queries(IcDatabaseUsersQueriesType.class);
 
-    transaction.userIdSet(context.userSession().user().id());
+    final var user = context.userSession().user();
+    transaction.userIdSet(user.id());
+
+    /*
+     * Create the ticket and then check that the user's permissions should
+     * have allowed them to do so. The creation will be rolled back if the
+     * permission check fails.
+     */
 
     final var ticket =
       tickets.ticketCreate(command.creation());
 
     context.permissionCheck(ticket.ticketId(), TICKET_CREATE);
+
+    /*
+     * The user might not have permission to read/write tickets in the project,
+     * but they should have read/write permission to tickets they have created.
+     */
+
+    final var ticketRead =
+      new IcPermissionTicketwide(ticket.ticketId(), TICKET_READ);
+    final var ticketWrite =
+      new IcPermissionTicketwide(ticket.ticketId(), TICKET_WRITE);
+
+    final var newPermissions =
+      user.permissions().toBuilder()
+        .add(ticketRead)
+        .add(ticketWrite)
+        .build();
+
+    users.userPut(user.withPermissions(newPermissions));
+
     return new IcTResponseTicketCreate(context.requestId(), ticket);
   }
 }

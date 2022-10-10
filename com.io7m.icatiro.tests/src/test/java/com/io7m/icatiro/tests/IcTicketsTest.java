@@ -20,6 +20,7 @@ import com.io7m.icatiro.client.IcClients;
 import com.io7m.icatiro.client.api.IcClientException;
 import com.io7m.icatiro.client.api.IcClientType;
 import com.io7m.icatiro.model.IcPermissionGlobal;
+import com.io7m.icatiro.model.IcPermissionTicketwide;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
@@ -46,10 +47,12 @@ import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.OPERATION_NOT_PE
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROTOCOL_ERROR;
 import static com.io7m.icatiro.model.IcPermission.TICKET_CREATE;
 import static com.io7m.icatiro.model.IcPermission.TICKET_READ;
+import static com.io7m.icatiro.model.IcPermission.TICKET_WRITE;
 import static com.io7m.icatiro.model.IcTicketColumn.BY_ID;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public final class IcTicketsTest extends IcWithServerContract
 {
@@ -539,5 +542,76 @@ public final class IcTicketsTest extends IcWithServerContract
         });
       assertEquals(PROTOCOL_ERROR, ex.errorCode());
     }
+  }
+
+  /**
+   * Ticket creation grants read access to the ticket.
+   *
+   * @throws Exception On errors
+   */
+
+  @Test
+  public void testTicketCreateGrantsReadWriteAccess()
+    throws Exception
+  {
+    final var user0Id =
+      this.createIdstoreUser("someone");
+    final var user1Id =
+      this.createIdstoreUser("someone-else");
+
+    this.icatiro().userInitialSet(user0Id);
+
+    this.client.login("someone-else", "12345678", serverAPIBase());
+
+    /*
+     * Grant access to someone-else to allow them to create tickets.
+     */
+
+    this.client.login("someone", "12345678", serverAPIBase());
+    final var createTicketsGlobally = new IcPermissionGlobal(TICKET_CREATE);
+    this.client.permissionGrant(user1Id, createTicketsGlobally);
+
+    final var project =
+      this.client.projectCreate(
+        new IcProjectShortName("PROJECT"),
+        new IcProjectTitle("Example project.")
+      );
+
+    /*
+     * Log in as someone-else.
+     */
+
+    final var user1 =
+      this.client.login("someone-else", "12345678", serverAPIBase());
+
+    assertTrue(user1.permissions().impliesScoped(createTicketsGlobally));
+
+    /*
+     * Creating a ticket grants read and write access if the user does not
+     * already have it.
+     */
+
+    final var ticket =
+      this.client.ticketCreate(
+        new IcTicketCreation(
+          project.id(),
+          new IcTicketTitle("Title"),
+          "Description."
+        )
+      );
+
+    final var user1After =
+      this.client.login("someone-else", "12345678", serverAPIBase());
+
+    assertTrue(
+      user1After.permissions()
+        .impliesScoped(
+          new IcPermissionTicketwide(ticket.ticketId(), TICKET_WRITE))
+    );
+    assertTrue(
+      user1After.permissions()
+        .impliesScoped(
+          new IcPermissionTicketwide(ticket.ticketId(), TICKET_READ))
+    );
   }
 }

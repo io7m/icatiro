@@ -54,4 +54,21 @@ public record IcUser(
     Objects.requireNonNull(emails, "emails");
     Objects.requireNonNull(permissions, "permissions");
   }
+
+  /**
+   * @param newPermissions The new permissions
+   *
+   * @return This user with the given permissions
+   */
+
+  public IcUser withPermissions(
+    final IcPermissionSet newPermissions)
+  {
+    return new IcUser(
+      this.id,
+      this.name,
+      this.emails,
+      newPermissions
+    );
+  }
 }
