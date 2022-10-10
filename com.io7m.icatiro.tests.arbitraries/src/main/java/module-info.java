@@ -26,9 +26,11 @@ import com.io7m.icatiro.tests.arbitraries.IcArbProjectProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbProjectShortNameProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbProjectTitleProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbTicketColumnOrderingProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTicketCommentProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbTicketCreationProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbTicketIdProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbTicketListSearchProvider;
+import com.io7m.icatiro.tests.arbitraries.IcArbTicketProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbTicketSummaryProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbTicketTitleProvider;
 import com.io7m.icatiro.tests.arbitraries.IcArbTimeRangeProvider;
@@ -67,9 +69,11 @@ module com.io7m.icatiro.tests.arbitraries
       IcArbProjectShortNameProvider,
       IcArbProjectTitleProvider,
       IcArbTicketColumnOrderingProvider,
+      IcArbTicketCommentProvider,
       IcArbTicketCreationProvider,
       IcArbTicketIdProvider,
       IcArbTicketListSearchProvider,
+      IcArbTicketProvider,
       IcArbTicketSummaryProvider,
       IcArbTicketTitleProvider,
       IcArbTimeRangeProvider,

@@ -24,14 +24,20 @@ import com.io7m.icatiro.model.IcPermissionScopedType;
 import com.io7m.icatiro.model.IcProject;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
+import com.io7m.icatiro.model.IcTicket;
+import com.io7m.icatiro.model.IcTicketComment;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
+import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.protocol.IcProtocolException;
 import com.io7m.icatiro.protocol.tickets.IcTCommandLogin;
 import com.io7m.icatiro.protocol.tickets.IcTCommandPermissionGrant;
 import com.io7m.icatiro.protocol.tickets.IcTCommandProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCommentCreate;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketGet;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchBegin;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchPrevious;
@@ -40,7 +46,9 @@ import com.io7m.icatiro.protocol.tickets.IcTResponseError;
 import com.io7m.icatiro.protocol.tickets.IcTResponseLogin;
 import com.io7m.icatiro.protocol.tickets.IcTResponsePermissionGrant;
 import com.io7m.icatiro.protocol.tickets.IcTResponseProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCommentCreate;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketGet;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchBegin;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchPrevious;
@@ -286,6 +294,28 @@ public final class IcClientProtocolHandler1
       IcTResponseTicketSearchPrevious.class,
       new IcTCommandTicketSearchPrevious()
     ).tickets();
+  }
+
+  @Override
+  public IcTicketComment ticketCommentCreate(
+    final IcTicketCommentCreation create)
+    throws IcClientException, InterruptedException
+  {
+    return this.sendCommand(
+      IcTResponseTicketCommentCreate.class,
+      new IcTCommandTicketCommentCreate(create)
+    ).comment();
+  }
+
+  @Override
+  public IcTicket ticketGet(
+    final IcTicketID id)
+    throws IcClientException, InterruptedException
+  {
+    return this.sendCommand(
+      IcTResponseTicketGet.class,
+      new IcTCommandTicketGet(id)
+    ).ticket();
   }
 
   @Override

@@ -80,6 +80,10 @@
       <groupId>com.io7m.cxbutton</groupId>
       <artifactId>com.io7m.cxbutton.core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.io7m.jaffirm</groupId>
+      <artifactId>com.io7m.jaffirm.core</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>ch.qos.logback</groupId>

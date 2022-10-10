@@ -37,6 +37,7 @@ module com.io7m.icatiro.server
   requires com.fasterxml.jackson.databind;
   requires com.io7m.idstore.user_client.api;
   requires com.io7m.idstore.user_client;
+  requires com.io7m.jaffirm.core;
   requires com.io7m.jmulticlose.core;
   requires com.io7m.jvindicator.core;
   requires com.io7m.jxtrand.vanilla;

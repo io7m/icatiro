@@ -16,33 +16,28 @@
 
 package com.io7m.icatiro.protocol.tickets;
 
-import com.io7m.icatiro.model.IcTicketSummary;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 
 import java.util.Objects;
-import java.util.UUID;
 
 /**
- * A response to {@link IcTCommandTicketCreate}.
+ * A request to create a ticket comment.
  *
- * @param requestId The request ID
- * @param ticket    The ticket
+ * @param creation The ticket comment creation info
  */
 
-public record IcTResponseTicketCreate(
-  UUID requestId,
-  IcTicketSummary ticket)
-  implements IcTResponseType
+public record IcTCommandTicketCommentCreate(
+  IcTicketCommentCreation creation)
+  implements IcTCommandType<IcTResponseTicketCommentCreate>
 {
   /**
-   * A response to {@link IcTCommandTicketCreate}.
+   * A request to create a ticket.
    *
-   * @param requestId The request ID
-   * @param ticket    The ticket
+   * @param creation The ticket comment creation info
    */
 
-  public IcTResponseTicketCreate
+  public IcTCommandTicketCommentCreate
   {
-    Objects.requireNonNull(requestId, "requestId");
-    Objects.requireNonNull(ticket, "ticket");
+    Objects.requireNonNull(creation, "creation");
   }
 }

@@ -21,6 +21,7 @@ import com.io7m.cedarbridge.runtime.api.CBIntegerUnsigned32;
 import com.io7m.cedarbridge.runtime.api.CBIntegerUnsigned64;
 import com.io7m.cedarbridge.runtime.api.CBIntegerUnsigned8;
 import com.io7m.cedarbridge.runtime.api.CBList;
+import com.io7m.cedarbridge.runtime.api.CBOptionType;
 import com.io7m.cedarbridge.runtime.api.CBSerializableType;
 import com.io7m.cedarbridge.runtime.api.CBString;
 import com.io7m.icatiro.model.IcPage;
@@ -34,8 +35,11 @@ import com.io7m.icatiro.model.IcProject;
 import com.io7m.icatiro.model.IcProjectID;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
+import com.io7m.icatiro.model.IcTicket;
 import com.io7m.icatiro.model.IcTicketColumn;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
+import com.io7m.icatiro.model.IcTicketComment;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
 import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
@@ -48,7 +52,9 @@ import com.io7m.icatiro.protocol.IcProtocolMessageValidatorType;
 import com.io7m.icatiro.protocol.tickets.IcTCommandLogin;
 import com.io7m.icatiro.protocol.tickets.IcTCommandPermissionGrant;
 import com.io7m.icatiro.protocol.tickets.IcTCommandProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCommentCreate;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketGet;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchBegin;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchPrevious;
@@ -58,7 +64,9 @@ import com.io7m.icatiro.protocol.tickets.IcTResponseError;
 import com.io7m.icatiro.protocol.tickets.IcTResponseLogin;
 import com.io7m.icatiro.protocol.tickets.IcTResponsePermissionGrant;
 import com.io7m.icatiro.protocol.tickets.IcTResponseProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCommentCreate;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketGet;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchBegin;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchPrevious;
@@ -70,6 +78,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -153,11 +163,80 @@ public final class IcT1Validation
     if (r instanceof IcTResponsePermissionGrant cc) {
       return toWireResponsePermissionGrant(cc);
     }
+    if (r instanceof IcTResponseTicketCommentCreate cc) {
+      return toWireResponseTicketCommentCreate(cc);
+    }
+    if (r instanceof IcTResponseTicketGet cc) {
+      return toWireResponseTicketGet(cc);
+    }
 
     throw new IcProtocolException(
       PROTOCOL_ERROR,
       "Unrecognized message: %s".formatted(r)
     );
+  }
+
+  private static ProtocolTicketsv1Type toWireResponseTicketGet(
+    final IcTResponseTicketGet cc)
+  {
+    return new Ic1ResponseTicketGet(
+      toWireUUID(cc.requestId()),
+      toWireTicket(cc.ticket())
+    );
+  }
+
+  private static Ic1Ticket toWireTicket(
+    final IcTicket ticket)
+  {
+    return new Ic1Ticket(
+      toWireTicketId(ticket.id()),
+      string(ticket.title().value()),
+      toWireTimestamp(ticket.timeCreated()),
+      toWireTimestamp(ticket.timeUpdated()),
+      toWireUUID(ticket.reporter()),
+      string(ticket.reporterName().value()),
+      string(ticket.description()),
+      new CBList<>(
+        ticket.comments()
+          .stream()
+          .map(IcT1Validation::toWireTicketComment)
+          .toList()
+      )
+    );
+  }
+
+  private static ProtocolTicketsv1Type toWireResponseTicketCommentCreate(
+    final IcTResponseTicketCommentCreate cc)
+  {
+    return new Ic1ResponseTicketCommentCreate(
+      toWireUUID(cc.requestId()),
+      toWireTicketComment(cc.comment())
+    );
+  }
+
+  private static Ic1TicketComment toWireTicketComment(
+    final IcTicketComment comment)
+  {
+    return new Ic1TicketComment(
+      toWireTicketId(comment.ticket()),
+      toWireTimestamp(comment.time()),
+      toWireUUID(comment.owner()),
+      unsigned64(comment.commentId()),
+      fromOptionalLong(comment.commentRepliedTo()),
+      string(comment.text())
+    );
+  }
+
+  private static CBOptionType<CBIntegerUnsigned64> fromOptionalLong(
+    final OptionalLong x)
+  {
+    if (x.isPresent()) {
+      return fromOptional(
+        Optional.of(Long.valueOf(x.getAsLong()))
+          .map(y -> unsigned64(y.longValue()))
+      );
+    }
+    return fromOptional(Optional.empty());
   }
 
   private static ProtocolTicketsv1Type toWireResponsePermissionGrant(
@@ -335,6 +414,7 @@ public final class IcT1Validation
       case TICKET_READ -> new Ic1Permission.TicketRead();
       case TICKET_WRITE -> new Ic1Permission.TicketWrite();
       case TICKET_CREATE -> new Ic1Permission.TicketCreate();
+      case TICKET_COMMENT -> new Ic1Permission.TicketComment();
       case PROJECT_CREATE -> new Ic1Permission.ProjectCreate();
     };
   }
@@ -373,10 +453,33 @@ public final class IcT1Validation
     if (c instanceof IcTCommandPermissionGrant cc) {
       return toWireCommandPermissionGrant(cc);
     }
+    if (c instanceof IcTCommandTicketCommentCreate cc) {
+      return toWireCommandTicketCommentCreate(cc);
+    }
+    if (c instanceof IcTCommandTicketGet cc) {
+      return toWireCommandTicketGet(cc);
+    }
 
     throw new IcProtocolException(
       PROTOCOL_ERROR,
       "Unrecognized message: %s".formatted(c)
+    );
+  }
+
+  private static ProtocolTicketsv1Type toWireCommandTicketGet(
+    final IcTCommandTicketGet cc)
+  {
+    return new Ic1CommandTicketGet(toWireTicketId(cc.id()));
+  }
+
+  private static ProtocolTicketsv1Type toWireCommandTicketCommentCreate(
+    final IcTCommandTicketCommentCreate cc)
+  {
+    final var creation = cc.creation();
+    return new Ic1CommandTicketCommentCreate(
+      toWireTicketId(creation.ticket()),
+      fromOptionalLong(creation.commentRepliedTo()),
+      string(creation.text())
     );
   }
 
@@ -507,6 +610,12 @@ public final class IcT1Validation
       if (message instanceof Ic1CommandPermissionGrant m) {
         return fromWireCommandPermissionGrant(m);
       }
+      if (message instanceof Ic1CommandTicketCommentCreate m) {
+        return fromWireCommandTicketCommentCreate(m);
+      }
+      if (message instanceof Ic1CommandTicketGet m) {
+        return fromWireCommandTicketGet(m);
+      }
 
       if (message instanceof Ic1ResponseLogin m) {
         return fromWireResponseLogin(m);
@@ -532,15 +641,99 @@ public final class IcT1Validation
       if (message instanceof Ic1ResponsePermissionGrant m) {
         return fromWireResponsePermissionGrant(m);
       }
+      if (message instanceof Ic1ResponseTicketCommentCreate m) {
+        return fromWireResponseTicketCommentCreate(m);
+      }
+      if (message instanceof Ic1ResponseTicketGet m) {
+        return fromWireResponseTicketGet(m);
+      }
 
     } catch (final Exception e) {
-      throw new IcProtocolException(PROTOCOL_ERROR, e.getMessage());
+      throw new IcProtocolException(PROTOCOL_ERROR, e.getMessage(), e);
     }
 
     throw new IcProtocolException(
       PROTOCOL_ERROR,
       "Unrecognized message: %s".formatted(message)
     );
+  }
+
+  private static IcTMessageType fromWireResponseTicketGet(
+    final Ic1ResponseTicketGet m)
+  {
+    return new IcTResponseTicketGet(
+      fromWireUUID(m.fieldRequestId()),
+      fromWireTicket(m.fieldTicket())
+    );
+  }
+
+  private static IcTicket fromWireTicket(
+    final Ic1Ticket ticket)
+  {
+    return new IcTicket(
+      fromWireTicketId(ticket.fieldTicket()),
+      new IcTicketTitle(ticket.fieldTitle().value()),
+      fromWireTimestamp(ticket.fieldTimeCreated()),
+      fromWireTimestamp(ticket.fieldTimeUpdated()),
+      fromWireUUID(ticket.fieldReporter()),
+      new IdName(ticket.fieldReporterName().value()),
+      ticket.fieldDescription().value(),
+      ticket.fieldComments()
+        .values()
+        .stream()
+        .map(IcT1Validation::fromWireTicketComment)
+        .toList()
+    );
+  }
+
+  private static IcTMessageType fromWireCommandTicketGet(
+    final Ic1CommandTicketGet m)
+  {
+    return new IcTCommandTicketGet(
+      fromWireTicketId(m.fieldTicket())
+    );
+  }
+
+  private static IcTMessageType fromWireResponseTicketCommentCreate(
+    final Ic1ResponseTicketCommentCreate m)
+  {
+    return new IcTResponseTicketCommentCreate(
+      fromWireUUID(m.fieldRequestId()),
+      fromWireTicketComment(m.fieldComment())
+    );
+  }
+
+  private static IcTicketComment fromWireTicketComment(
+    final Ic1TicketComment c)
+  {
+    return new IcTicketComment(
+      fromWireTicketId(c.fieldTicket()),
+      fromWireTimestamp(c.fieldTime()),
+      fromWireUUID(c.fieldOwner()),
+      c.fieldId().value(),
+      toOptionalLong(c.fieldInReplyTo()),
+      c.fieldText().value()
+    );
+  }
+
+  private static IcTMessageType fromWireCommandTicketCommentCreate(
+    final Ic1CommandTicketCommentCreate m)
+  {
+    return new IcTCommandTicketCommentCreate(
+      new IcTicketCommentCreation(
+        fromWireTicketId(m.fieldTicket()),
+        toOptionalLong(m.fieldInReplyTo()),
+        m.fieldText().value()
+      )
+    );
+  }
+
+  private static OptionalLong toOptionalLong(
+    final CBOptionType<CBIntegerUnsigned64> x)
+  {
+    final var o = x.asOptional();
+    return o.map(y -> OptionalLong.of(y.value()))
+      .orElseGet(OptionalLong::empty);
   }
 
   private static IcTMessageType fromWireResponsePermissionGrant(
@@ -732,6 +925,9 @@ public final class IcT1Validation
     }
     if (p instanceof Ic1Permission.TicketCreate) {
       return IcPermission.TICKET_CREATE;
+    }
+    if (p instanceof Ic1Permission.TicketComment) {
+      return IcPermission.TICKET_COMMENT;
     }
 
     throw new IllegalStateException(

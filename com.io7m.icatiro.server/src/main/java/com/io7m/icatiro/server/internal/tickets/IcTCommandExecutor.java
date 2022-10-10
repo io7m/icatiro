@@ -19,7 +19,9 @@ package com.io7m.icatiro.server.internal.tickets;
 import com.io7m.icatiro.protocol.tickets.IcTCommandLogin;
 import com.io7m.icatiro.protocol.tickets.IcTCommandPermissionGrant;
 import com.io7m.icatiro.protocol.tickets.IcTCommandProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCommentCreate;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketGet;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchBegin;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchPrevious;
@@ -74,6 +76,12 @@ public final class IcTCommandExecutor
     }
     if (command instanceof IcTCommandPermissionGrant c) {
       return new IcTCmdPermissionGrant().execute(context, c);
+    }
+    if (command instanceof IcTCommandTicketCommentCreate c) {
+      return new IcTCmdTicketCommentCreate().execute(context, c);
+    }
+    if (command instanceof IcTCommandTicketGet c) {
+      return new IcTCmdTicketGet().execute(context, c);
     }
 
     throw new IllegalStateException();

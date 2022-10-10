@@ -239,4 +239,18 @@ public final class IcStandardErrorCodes
 
   public static final IcErrorCode MAIL_SYSTEM_FAILURE =
     new IcErrorCode("error-mail-system-failure");
+
+  /**
+   * A ticket does not exist.
+   */
+
+  public static final IcErrorCode TICKET_NONEXISTENT =
+    new IcErrorCode("error-ticket-nonexistent");
+
+  /**
+   * A ticket comment does not exist.
+   */
+
+  public static final IcErrorCode TICKET_COMMENT_NONEXISTENT =
+    new IcErrorCode("error-ticket-comment-nonexistent");
 }

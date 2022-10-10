@@ -16,9 +16,15 @@
 
 package com.io7m.icatiro.database.api;
 
+import com.io7m.icatiro.model.IcTicket;
+import com.io7m.icatiro.model.IcTicketComment;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
+import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
+
+import java.util.Optional;
 
 /**
  * The database queries involving tickets.
@@ -27,6 +33,45 @@ import com.io7m.icatiro.model.IcTicketSummary;
 public non-sealed interface IcDatabaseTicketsQueriesType
   extends IcDatabaseQueriesType
 {
+  /**
+   * Retrieve a ticket.
+   *
+   * @param id The ticket ID
+   *
+   * @return The ticket, if it exists
+   *
+   * @throws IcDatabaseException On errors
+   */
+
+  Optional<IcTicket> ticketGet(IcTicketID id)
+    throws IcDatabaseException;
+
+  /**
+   * Retrieve a ticket.
+   *
+   * @param id The ticket ID
+   *
+   * @return The ticket
+   *
+   * @throws IcDatabaseException On errors
+   */
+
+  IcTicket ticketGetRequire(IcTicketID id)
+    throws IcDatabaseException;
+
+  /**
+   * Check if a ticket exists.
+   *
+   * @param id The ticket ID
+   *
+   * @return {@code true} if the ticket exists
+   *
+   * @throws IcDatabaseException On errors
+   */
+
+  boolean ticketExists(IcTicketID id)
+    throws IcDatabaseException;
+
   /**
    * Search for tickets.
    *
@@ -47,7 +92,7 @@ public non-sealed interface IcDatabaseTicketsQueriesType
    *
    * @param creation The creation information
    *
-   * @return The new project
+   * @return The new ticket
    *
    * @throws IcDatabaseException On errors
    */
@@ -55,5 +100,20 @@ public non-sealed interface IcDatabaseTicketsQueriesType
   @IcDatabaseRequiresUser
   IcTicketSummary ticketCreate(
     IcTicketCreation creation)
+    throws IcDatabaseException;
+
+  /**
+   * Create a new ticket comment.
+   *
+   * @param creation The creation information
+   *
+   * @return The new ticket comment
+   *
+   * @throws IcDatabaseException On errors
+   */
+
+  @IcDatabaseRequiresUser
+  IcTicketComment ticketCommentCreate(
+    IcTicketCommentCreation creation)
     throws IcDatabaseException;
 }

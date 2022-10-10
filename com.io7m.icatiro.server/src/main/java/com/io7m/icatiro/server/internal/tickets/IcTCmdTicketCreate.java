@@ -26,6 +26,7 @@ import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCreate;
 import com.io7m.icatiro.protocol.tickets.IcTResponseType;
 import com.io7m.icatiro.server.internal.IcSecurityException;
 
+import static com.io7m.icatiro.model.IcPermission.TICKET_COMMENT;
 import static com.io7m.icatiro.model.IcPermission.TICKET_CREATE;
 import static com.io7m.icatiro.model.IcPermission.TICKET_READ;
 import static com.io7m.icatiro.model.IcPermission.TICKET_WRITE;
@@ -59,7 +60,8 @@ public final class IcTCmdTicketCreate
     final var users =
       transaction.queries(IcDatabaseUsersQueriesType.class);
 
-    final var user = context.userSession().user();
+    final var session = context.userSession();
+    final var user = session.user();
     transaction.userIdSet(user.id());
 
     /*
@@ -82,14 +84,19 @@ public final class IcTCmdTicketCreate
       new IcPermissionTicketwide(ticket.ticketId(), TICKET_READ);
     final var ticketWrite =
       new IcPermissionTicketwide(ticket.ticketId(), TICKET_WRITE);
+    final var ticketComment =
+      new IcPermissionTicketwide(ticket.ticketId(), TICKET_COMMENT);
 
     final var newPermissions =
       user.permissions().toBuilder()
         .add(ticketRead)
         .add(ticketWrite)
+        .add(ticketComment)
         .build();
 
-    users.userPut(user.withPermissions(newPermissions));
+    final var newUser = user.withPermissions(newPermissions);
+    users.userPut(newUser);
+    session.setUser(newUser);
 
     return new IcTResponseTicketCreate(context.requestId(), ticket);
   }

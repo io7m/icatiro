@@ -76,6 +76,8 @@
   [case TicketCreate]
   [documentation TicketWrite "A ticket can be written."]
   [case TicketWrite]
+  [documentation TicketComment "A ticket can be commented on."]
+  [case TicketComment]
   [documentation ProjectCreate "A project can be created."]
   [case ProjectCreate]
 ]
@@ -191,6 +193,42 @@
   [field title cb:String]
 ]
 
+[documentation Ic1TicketComment "A ticket comment."]
+[record Ic1TicketComment
+  [documentation ticket "The ticket ID."]
+  [field ticket Ic1TicketID]
+  [documentation time "The comment creation time."]
+  [field time Ic1TimestampUTC]
+  [documentation owner "The creator of the comment."]
+  [field owner Ic1UUID]
+  [documentation id "The comment ID."]
+  [field id cb:IntegerUnsigned64]
+  [documentation inReplyTo "The comment being replied to."]
+  [field inReplyTo [cb:Option cb:IntegerUnsigned64]]
+  [documentation text "The comment text."]
+  [field text cb:String]
+]
+
+[documentation Ic1Ticket "A ticket."]
+[record Ic1Ticket
+  [documentation ticket "The ticket ID."]
+  [field ticket Ic1TicketID]
+  [documentation title "The ticket title."]
+  [field title cb:String]
+  [documentation timeCreated "The ticket creation time."]
+  [field timeCreated Ic1TimestampUTC]
+  [documentation timeUpdated "The ticket update time."]
+  [field timeUpdated Ic1TimestampUTC]
+  [documentation reporter "The creator of the ticket."]
+  [field reporter Ic1UUID]
+  [documentation reporterName "The creator of the ticket."]
+  [field reporterName cb:String]
+  [documentation description "The ticket description."]
+  [field description cb:String]
+  [documentation comments "The ticket commends."]
+  [field comments [cb:List Ic1TicketComment]]
+]
+
 ;
 ; Commands.
 ;
@@ -239,6 +277,22 @@
   [field targetUser Ic1UUID]
   [documentation permission "The permission."]
   [field permission Ic1PermissionScoped]
+]
+
+[documentation Ic1CommandTicketCommentCreate "A request to create a ticket comment."]
+[record Ic1CommandTicketCommentCreate
+  [documentation ticket "The ticket ID."]
+  [field ticket Ic1TicketID]
+  [documentation inReplyTo "The comment to which this comment is replying."]
+  [field inReplyTo [cb:Option cb:IntegerUnsigned64]]
+  [documentation text "The comment text."]
+  [field text cb:String]
+]
+
+[documentation Ic1CommandTicketGet "A request to retrieve a ticket."]
+[record Ic1CommandTicketGet
+  [documentation ticket "The ticket ID."]
+  [field ticket Ic1TicketID]
 ]
 
 ;
@@ -309,6 +363,22 @@
   [field requestId Ic1UUID]
 ]
 
+[documentation Ic1ResponseTicketCommentCreate "A response to Ic1CommandTicketCommentCreate."]
+[record Ic1ResponseTicketCommentCreate
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation comment "The created comment."]
+  [field comment Ic1TicketComment]
+]
+
+[documentation Ic1ResponseTicketGet "A response to Ic1CommandTicketGet."]
+[record Ic1ResponseTicketGet
+  [documentation requestId "The ID of the request that yielded this response."]
+  [field requestId Ic1UUID]
+  [documentation ticket "The ticket."]
+  [field ticket Ic1Ticket]
+]
+
 [documentation Tickets "The tickets protocol."]
 [protocol Tickets
   [version 1
@@ -316,7 +386,9 @@
       Ic1CommandLogin
       Ic1CommandPermissionGrant
       Ic1CommandProjectCreate
+      Ic1CommandTicketCommentCreate
       Ic1CommandTicketCreate
+      Ic1CommandTicketGet
       Ic1CommandTicketSearchBegin
       Ic1CommandTicketSearchNext
       Ic1CommandTicketSearchPrevious
@@ -324,7 +396,9 @@
       Ic1ResponseLogin
       Ic1ResponsePermissionGrant
       Ic1ResponseProjectCreate
+      Ic1ResponseTicketCommentCreate
       Ic1ResponseTicketCreate
+      Ic1ResponseTicketGet
       Ic1ResponseTicketSearchBegin
       Ic1ResponseTicketSearchNext
       Ic1ResponseTicketSearchPrevious

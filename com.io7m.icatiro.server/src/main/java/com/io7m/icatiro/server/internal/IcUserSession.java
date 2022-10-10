@@ -19,6 +19,7 @@ package com.io7m.icatiro.server.internal;
 import com.io7m.icatiro.database.api.IcDatabaseTicketSearchType;
 import com.io7m.icatiro.model.IcUser;
 import com.io7m.idstore.user_client.api.IdUClientType;
+import com.io7m.jaffirm.core.Preconditions;
 import jakarta.servlet.http.HttpSession;
 
 import java.util.Objects;
@@ -95,5 +96,20 @@ public final class IcUserSession
   public IcUser user()
   {
     return this.user;
+  }
+
+  /**
+   * Update the user.
+   *
+   * @param inUser The user
+   */
+
+  public void setUser(
+    final IcUser inUser)
+  {
+    Preconditions.checkPreconditionV(
+      Objects.equals(this.user.id(), inUser.id()),
+      "Session user ID must match."
+    );
   }
 }

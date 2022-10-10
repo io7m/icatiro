@@ -25,7 +25,10 @@ import com.io7m.icatiro.model.IcProjectID;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
 import com.io7m.icatiro.model.IcProjectUniqueIdentifierType;
+import com.io7m.icatiro.model.IcTicket;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
+import com.io7m.icatiro.model.IcTicketComment;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
 import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
@@ -45,13 +48,18 @@ import org.jooq.impl.DSL;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.io7m.icatiro.database.postgres.internal.IcDatabaseExceptions.handleDatabaseException;
 import static com.io7m.icatiro.database.postgres.internal.Tables.AUDIT;
 import static com.io7m.icatiro.database.postgres.internal.Tables.TICKETS;
+import static com.io7m.icatiro.database.postgres.internal.Tables.TICKET_COMMENTS;
 import static com.io7m.icatiro.database.postgres.internal.Tables.USERS;
 import static com.io7m.icatiro.database.postgres.internal.tables.Projects.PROJECTS;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROJECT_NONEXISTENT;
+import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.TICKET_COMMENT_NONEXISTENT;
+import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.TICKET_NONEXISTENT;
 import static com.io7m.icatiro.model.IcPermission.TICKET_READ;
 import static io.opentelemetry.semconv.trace.attributes.SemanticAttributes.DB_STATEMENT;
 import static java.lang.Long.toUnsignedString;
@@ -174,6 +182,239 @@ final class IcDatabaseTicketsQueries
     } finally {
       querySpan.end();
     }
+  }
+
+  @Override
+  public IcTicketComment ticketCommentCreate(
+    final IcTicketCommentCreation creation)
+    throws IcDatabaseException
+  {
+    Objects.requireNonNull(creation, "creation");
+
+    final var transaction =
+      this.transaction();
+    final var context =
+      transaction.createContext();
+    final var userId =
+      transaction.userId();
+    final var querySpan =
+      transaction.createQuerySpan(
+        "IdDatabaseTicketsQueries.ticketCommentCreate");
+
+    try {
+      final var ticketId = creation.ticket();
+      if (!checkTicketExists(context, ticketId)) {
+        throw new IcDatabaseException(
+          "No such ticket %s".formatted(ticketId),
+          TICKET_NONEXISTENT
+        );
+      }
+
+      final var timeNow =
+        this.currentTime();
+      final var inReplyTo =
+        creation.commentRepliedTo();
+
+      /*
+       * If a comment is replying to a comment, then check that the comment
+       * is actually on this ticket.
+       */
+
+      if (inReplyTo.isPresent()) {
+        final var replyComment =
+          valueOf(inReplyTo.getAsLong());
+        final var existingTicketOpt =
+          context.selectFrom(TICKET_COMMENTS)
+            .where(TICKET_COMMENTS.ID.eq(replyComment))
+            .fetchOptional();
+
+        if (existingTicketOpt.isEmpty()) {
+          throw new IcDatabaseException(
+            "No such ticket comment %s".formatted(replyComment),
+            TICKET_COMMENT_NONEXISTENT
+          );
+        }
+
+        final var existingTicket = existingTicketOpt.get();
+        if (existingTicket.getTicketId().longValue() != ticketId.value()) {
+          throw new IcDatabaseException(
+            "No such ticket comment %s".formatted(replyComment),
+            TICKET_COMMENT_NONEXISTENT
+          );
+        }
+      }
+
+      final var newComment = context.newRecord(TICKET_COMMENTS);
+      newComment.set(TICKET_COMMENTS.TICKET_ID, valueOf(ticketId.value()));
+      newComment.set(TICKET_COMMENTS.TIME, timeNow);
+      newComment.set(TICKET_COMMENTS.TEXT, creation.text());
+
+      if (inReplyTo.isPresent()) {
+        final var replyComment = valueOf(inReplyTo.getAsLong());
+        newComment.set(
+          TICKET_COMMENTS.TICKET_REPLIED_TO,
+          replyComment
+        );
+      }
+
+      newComment.set(TICKET_COMMENTS.OWNER, userId);
+      newComment.store();
+
+      final var newId =
+        newComment.getId().longValue();
+
+      context.insertInto(AUDIT)
+        .set(AUDIT.USER_ID, userId)
+        .set(AUDIT.TIME, this.currentTime())
+        .set(AUDIT.MESSAGE, toUnsignedString(newId))
+        .set(AUDIT.TYPE, "TICKET_COMMENT_CREATED")
+        .execute();
+
+      return new IcTicketComment(
+        ticketId,
+        timeNow,
+        userId,
+        newId,
+        inReplyTo,
+        creation.text()
+      );
+    } catch (final DataAccessException e) {
+      querySpan.recordException(e);
+      throw handleDatabaseException(transaction, e);
+    } finally {
+      querySpan.end();
+    }
+  }
+
+  @Override
+  public Optional<IcTicket> ticketGet(
+    final IcTicketID id)
+    throws IcDatabaseException
+  {
+    Objects.requireNonNull(id, "id");
+
+    final var transaction =
+      this.transaction();
+    final var context =
+      transaction.createContext();
+    final var querySpan =
+      transaction.createQuerySpan(
+        "IdDatabaseTicketsQueries.ticketGet");
+
+    try {
+      final var baseTable =
+        TICKETS
+          .join(PROJECTS).on(PROJECTS.ID.eq(TICKETS.PROJECT))
+          .join(USERS).on(USERS.ID.eq(TICKETS.REPORTER));
+
+      final var ticketQuery =
+        context.selectFrom(baseTable)
+          .where(TICKETS.ID.eq(valueOf(id.value())));
+
+      final var ticketRecordOpt = ticketQuery.fetchOptional();
+      if (ticketRecordOpt.isEmpty()) {
+        return Optional.empty();
+      }
+
+      final var ticketRecord =
+        ticketRecordOpt.get();
+
+      final var selectComments =
+        context.selectFrom(TICKET_COMMENTS)
+          .where(TICKET_COMMENTS.TICKET_ID.eq(valueOf(id.value())))
+          .orderBy(TICKET_COMMENTS.TIME.asc());
+
+      final var comments =
+        selectComments.fetch()
+          .map(r -> {
+            return new IcTicketComment(
+              id,
+              r.getTime(),
+              r.getOwner(),
+              r.getId().longValue(),
+              toOptionalLong(r.getTicketRepliedTo()),
+              r.getText()
+            );
+          });
+
+      return Optional.of(
+        new IcTicket(
+          id,
+          new IcTicketTitle(ticketRecord.get(TICKETS.TITLE)),
+          ticketRecord.get(TICKETS.TIME_CREATED),
+          ticketRecord.get(TICKETS.TIME_UPDATED),
+          ticketRecord.get(TICKETS.REPORTER),
+          new IdName(ticketRecord.get(USERS.NAME)),
+          ticketRecord.get(TICKETS.DESCRIPTION),
+          comments
+        )
+      );
+    } catch (final DataAccessException e) {
+      querySpan.recordException(e);
+      throw handleDatabaseException(transaction, e);
+    } finally {
+      querySpan.end();
+    }
+  }
+
+  private static OptionalLong toOptionalLong(
+    final Long id)
+  {
+    if (id == null) {
+      return OptionalLong.empty();
+    }
+    return OptionalLong.of(id.longValue());
+  }
+
+  @Override
+  public IcTicket ticketGetRequire(
+    final IcTicketID id)
+    throws IcDatabaseException
+  {
+    return this.ticketGet(id)
+      .orElseThrow(() -> {
+        return new IcDatabaseException(
+          "No such ticket %s".formatted(id),
+          TICKET_NONEXISTENT
+        );
+      });
+  }
+
+  @Override
+  public boolean ticketExists(
+    final IcTicketID id)
+    throws IcDatabaseException
+  {
+    Objects.requireNonNull(id, "id");
+
+    final var transaction =
+      this.transaction();
+    final var context =
+      transaction.createContext();
+    final var querySpan =
+      transaction.createQuerySpan(
+        "IdDatabaseTicketsQueries.ticketExists");
+
+    try {
+      return checkTicketExists(context, id);
+    } catch (final DataAccessException e) {
+      querySpan.recordException(e);
+      throw handleDatabaseException(transaction, e);
+    } finally {
+      querySpan.end();
+    }
+  }
+
+  private static boolean checkTicketExists(
+    final DSLContext context,
+    final IcTicketID id)
+  {
+    return context.fetchExists(
+      TICKETS.where(
+        DSL.condition(TICKETS.PROJECT.eq(valueOf(id.project().value())))
+          .and(DSL.condition(TICKETS.ID.eq(valueOf(id.value()))))
+      )
+    );
   }
 
   @Override

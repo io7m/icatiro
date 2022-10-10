@@ -22,7 +22,11 @@ import com.io7m.icatiro.model.IcPermissionScopedType;
 import com.io7m.icatiro.model.IcProject;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
+import com.io7m.icatiro.model.IcTicket;
+import com.io7m.icatiro.model.IcTicketComment;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
+import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 
@@ -118,6 +122,22 @@ public final class IcClientProtocolHandlerDisconnected
 
   @Override
   public IcPage<IcTicketSummary> ticketSearchPrevious()
+    throws IcClientException
+  {
+    throw this.notLoggedIn();
+  }
+
+  @Override
+  public IcTicketComment ticketCommentCreate(
+    final IcTicketCommentCreation create)
+    throws IcClientException
+  {
+    throw this.notLoggedIn();
+  }
+
+  @Override
+  public IcTicket ticketGet(
+    final IcTicketID id)
     throws IcClientException
   {
     throw this.notLoggedIn();

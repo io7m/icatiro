@@ -17,7 +17,11 @@
 package com.io7m.icatiro.client.api;
 
 import com.io7m.icatiro.model.IcPage;
+import com.io7m.icatiro.model.IcTicket;
+import com.io7m.icatiro.model.IcTicketComment;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
+import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 
@@ -78,5 +82,33 @@ public interface IcClientTicketsType
    */
 
   IcPage<IcTicketSummary> ticketSearchPrevious()
+    throws IcClientException, InterruptedException;
+
+  /**
+   * Create a ticket comment.
+   *
+   * @param create The ticket comment creation info
+   *
+   * @return The ticket
+   *
+   * @throws IcClientException    On errors
+   * @throws InterruptedException On interruption
+   */
+
+  IcTicketComment ticketCommentCreate(IcTicketCommentCreation create)
+    throws IcClientException, InterruptedException;
+
+  /**
+   * Retrieve a ticket.
+   *
+   * @param id The ticket id
+   *
+   * @return The ticket
+   *
+   * @throws IcClientException    On errors
+   * @throws InterruptedException On interruption
+   */
+
+  IcTicket ticketGet(IcTicketID id)
     throws IcClientException, InterruptedException;
 }

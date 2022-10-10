@@ -22,14 +22,20 @@ import com.io7m.icatiro.model.IcPermissionScopedType;
 import com.io7m.icatiro.model.IcProject;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
+import com.io7m.icatiro.model.IcTicket;
+import com.io7m.icatiro.model.IcTicketComment;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
+import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcUser;
 import com.io7m.icatiro.protocol.tickets.IcTCommandLogin;
 import com.io7m.icatiro.protocol.tickets.IcTCommandPermissionGrant;
 import com.io7m.icatiro.protocol.tickets.IcTCommandProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCommentCreate;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTCommandTicketGet;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchBegin;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTCommandTicketSearchPrevious;
@@ -38,7 +44,9 @@ import com.io7m.icatiro.protocol.tickets.IcTResponseError;
 import com.io7m.icatiro.protocol.tickets.IcTResponseLogin;
 import com.io7m.icatiro.protocol.tickets.IcTResponsePermissionGrant;
 import com.io7m.icatiro.protocol.tickets.IcTResponseProjectCreate;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCommentCreate;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketCreate;
+import com.io7m.icatiro.protocol.tickets.IcTResponseTicketGet;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchBegin;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchNext;
 import com.io7m.icatiro.protocol.tickets.IcTResponseTicketSearchPrevious;
@@ -47,6 +55,8 @@ import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
 import net.jqwik.api.providers.TypeUsage;
 
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.UUID;
 
@@ -81,7 +91,9 @@ public final class IcArbIcTMessageProvider extends IcArbAbstractProvider
       commandLogin(),
       commandPermissionGrant(),
       commandProjectCreate(),
+      commandTicketCommentCreate(),
       commandTicketCreate(),
+      commandTicketGet(),
       commandTicketSearchBegin(),
       commandTicketSearchNext(),
       commandTicketSearchPrevious(),
@@ -89,11 +101,63 @@ public final class IcArbIcTMessageProvider extends IcArbAbstractProvider
       responseLogin(),
       responsePermissionGrant(),
       responseProjectCreate(),
+      responseTicketCommentCreate(),
       responseTicketCreate(),
+      responseTicketGet(),
       responseTicketSearchBegin(),
       responseTicketSearchNext(),
       responseTicketSearchPrevious()
     );
+  }
+
+  private static Arbitrary<IcTResponseTicketGet> responseTicketGet()
+  {
+    final var u =
+      Arbitraries.defaultFor(UUID.class);
+    final var t =
+      Arbitraries.defaultFor(IcTicket.class);
+    return Combinators.combine(u, t)
+      .as(IcTResponseTicketGet::new);
+  }
+
+  private static Arbitrary<IcTCommandTicketGet> commandTicketGet()
+  {
+    final var t =
+      Arbitraries.defaultFor(IcTicketID.class);
+    return t.map(IcTCommandTicketGet::new);
+  }
+
+  private static Arbitrary<IcTCommandTicketCommentCreate> commandTicketCommentCreate()
+  {
+    final var t =
+      Arbitraries.defaultFor(IcTicketID.class);
+    final var u =
+      Arbitraries.longs()
+        .optional()
+        .map(IcArbIcTMessageProvider::toOptionalLong);
+    final var s =
+      Arbitraries.strings();
+
+    return Combinators.combine(t, u, s).as((ticketId, reply, text) -> {
+      return new IcTCommandTicketCommentCreate(
+        new IcTicketCommentCreation(ticketId, reply, text)
+      );
+    });
+  }
+
+  static OptionalLong toOptionalLong(
+    final Optional<Long> x)
+  {
+    return x.map(y -> OptionalLong.of(y.longValue()))
+      .orElseGet(OptionalLong::empty);
+  }
+
+  private static Arbitrary<IcTResponseTicketCommentCreate> responseTicketCommentCreate()
+  {
+    return Combinators.combine(
+      Arbitraries.defaultFor(UUID.class),
+      Arbitraries.defaultFor(IcTicketComment.class)
+    ).as(IcTResponseTicketCommentCreate::new);
   }
 
   private static Arbitrary<IcTResponsePermissionGrant> responsePermissionGrant()

@@ -27,7 +27,9 @@ public sealed interface IcTCommandType<R extends IcTResponseType>
   permits IcTCommandLogin,
   IcTCommandPermissionGrant,
   IcTCommandProjectCreate,
+  IcTCommandTicketCommentCreate,
   IcTCommandTicketCreate,
+  IcTCommandTicketGet,
   IcTCommandTicketSearchBegin,
   IcTCommandTicketSearchNext,
   IcTCommandTicketSearchPrevious

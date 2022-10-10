@@ -29,7 +29,9 @@ public sealed interface IcTResponseType
   IcTResponseLogin,
   IcTResponsePermissionGrant,
   IcTResponseProjectCreate,
+  IcTResponseTicketCommentCreate,
   IcTResponseTicketCreate,
+  IcTResponseTicketGet,
   IcTResponseTicketSearchBegin,
   IcTResponseTicketSearchNext,
   IcTResponseTicketSearchPrevious

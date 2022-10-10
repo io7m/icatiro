@@ -14,35 +14,38 @@
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package com.io7m.icatiro.protocol.tickets;
-
-import com.io7m.icatiro.model.IcTicketSummary;
+package com.io7m.icatiro.model;
 
 import java.util.Objects;
-import java.util.UUID;
+import java.util.OptionalLong;
 
 /**
- * A response to {@link IcTCommandTicketCreate}.
+ * Information needed to create a ticket comment.
  *
- * @param requestId The request ID
- * @param ticket    The ticket
+ * @param ticket           The ticket
+ * @param commentRepliedTo The comment to which this comment is replying, if
+ *                         any
+ * @param text             The comment text
  */
 
-public record IcTResponseTicketCreate(
-  UUID requestId,
-  IcTicketSummary ticket)
-  implements IcTResponseType
+public record IcTicketCommentCreation(
+  IcTicketID ticket,
+  OptionalLong commentRepliedTo,
+  String text)
 {
   /**
-   * A response to {@link IcTCommandTicketCreate}.
+   * Information needed to create a ticket comment.
    *
-   * @param requestId The request ID
-   * @param ticket    The ticket
+   * @param ticket           The ticket
+   * @param commentRepliedTo The comment to which this comment is replying, if
+   *                         any
+   * @param text             The comment text
    */
 
-  public IcTResponseTicketCreate
+  public IcTicketCommentCreation
   {
-    Objects.requireNonNull(requestId, "requestId");
     Objects.requireNonNull(ticket, "ticket");
+    Objects.requireNonNull(commentRepliedTo, "commentRepliedTo");
+    Objects.requireNonNull(text, "text");
   }
 }

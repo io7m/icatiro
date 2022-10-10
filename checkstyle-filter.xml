@@ -26,15 +26,7 @@
             checks="IllegalInstantiation"/>
 
   <!-- Without pattern matching... -->
-  <suppress files="IcACommandExecutor\.java"
-            checks="NPathComplexity"/>
-  <suppress files="IcACommandExecutor\.java"
-            checks="CyclomaticComplexity"/>
-  <suppress files="IcPCommandExecutor\.java"
-            checks="NPathComplexity"/>
-  <suppress files="IcPCommandExecutor\.java"
-            checks="CyclomaticComplexity"/>
-  <suppress files="IcSecPolicyDefault\.java"
+  <suppress files="IcTCommandExecutor\.java"
             checks="NPathComplexity"/>
 
   <suppress files="IcT1Validation\.java"

@@ -157,7 +157,6 @@ create table tickets (
 ]]></Statement>
 
     <Statement>grant insert, select on tickets to icatiro</Statement>
-    <Statement>grant update (title) on tickets to icatiro</Statement>
     <Statement>grant update (time_updated) on tickets to icatiro</Statement>
 
     <Statement><![CDATA[
@@ -183,6 +182,27 @@ create index on tickets using gin (title_ts);
 create index on tickets using gin (description_ts);
 -- [jooq ignore stop]
 ]]></Statement>
+
+    <Comment>
+      The ticket_comments table stores comments for each ticket.
+    </Comment>
+
+    <Statement><![CDATA[
+create table ticket_comments (
+  id                 bigint not null primary key generated always as identity,
+  ticket_id          bigint not null,
+  ticket_replied_to  bigint,
+  owner              uuid not null,
+  text               text not null,
+  time               timestamp with time zone not null,
+
+  foreign key (owner)             references users (id),
+  foreign key (ticket_id)         references tickets (id),
+  foreign key (ticket_replied_to) references ticket_comments (id)
+)
+]]></Statement>
+
+    <Statement>grant insert, select on ticket_comments to icatiro</Statement>
 
     <Comment>
       The permissions table stores the set of permissions held by a user. If scope_project is non-null, then the

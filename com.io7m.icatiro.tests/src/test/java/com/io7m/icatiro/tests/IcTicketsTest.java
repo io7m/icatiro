@@ -24,7 +24,9 @@ import com.io7m.icatiro.model.IcPermissionTicketwide;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
 import com.io7m.icatiro.model.IcTicketColumnOrdering;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
+import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcTicketTitle;
@@ -40,11 +42,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.AUTHENTICATION_ERROR;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.NOT_LOGGED_IN;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.OPERATION_NOT_PERMITTED;
 import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.PROTOCOL_ERROR;
+import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.TICKET_COMMENT_NONEXISTENT;
+import static com.io7m.icatiro.error_codes.IcStandardErrorCodes.TICKET_NONEXISTENT;
 import static com.io7m.icatiro.model.IcPermission.TICKET_CREATE;
 import static com.io7m.icatiro.model.IcPermission.TICKET_READ;
 import static com.io7m.icatiro.model.IcPermission.TICKET_WRITE;
@@ -613,5 +618,191 @@ public final class IcTicketsTest extends IcWithServerContract
         .impliesScoped(
           new IcPermissionTicketwide(ticket.ticketId(), TICKET_READ))
     );
+  }
+
+  /**
+   * Retrieving a ticket with comments works.
+   *
+   * @throws Exception On errors
+   */
+
+  @Test
+  public void testTicketCreateGet()
+    throws Exception
+  {
+    final var user0Id = this.createIdstoreUser("someone");
+    this.icatiro().userInitialSet(user0Id);
+    this.client.login("someone", "12345678", serverAPIBase());
+
+    final var project =
+      this.client.projectCreate(
+        new IcProjectShortName("PROJECT"),
+        new IcProjectTitle("Example project.")
+      );
+
+    final var ticketSummary =
+      this.client.ticketCreate(
+        new IcTicketCreation(
+          project.id(),
+          new IcTicketTitle("Title"),
+          "Description."
+        )
+      );
+
+    var lastComment = OptionalLong.empty();
+    for (int index = 0; index < 20; ++index) {
+      final var comment =
+        this.client.ticketCommentCreate(
+          new IcTicketCommentCreation(
+            ticketSummary.ticketId(),
+            lastComment,
+            "Comment %d".formatted(index)
+          )
+        );
+      lastComment = OptionalLong.of(comment.commentId());
+    }
+
+    final var ticket = this.client.ticketGet(ticketSummary.ticketId());
+    assertEquals(20, ticket.comments().size());
+  }
+
+  /**
+   * It's not possible to specify that a comment was a reply to a comment on
+   * another ticket.
+   *
+   * @throws Exception On errors
+   */
+
+  @Test
+  public void testTicketReplyWrongTicket()
+    throws Exception
+  {
+    final var user0Id = this.createIdstoreUser("someone");
+    this.icatiro().userInitialSet(user0Id);
+    this.client.login("someone", "12345678", serverAPIBase());
+
+    final var project =
+      this.client.projectCreate(
+        new IcProjectShortName("PROJECT"),
+        new IcProjectTitle("Example project.")
+      );
+
+    final var ticket0 =
+      this.client.ticketCreate(
+        new IcTicketCreation(
+          project.id(),
+          new IcTicketTitle("Title"),
+          "Description."
+        )
+      );
+
+    final var ticket1 =
+      this.client.ticketCreate(
+        new IcTicketCreation(
+          project.id(),
+          new IcTicketTitle("Title"),
+          "Description."
+        )
+      );
+
+    final var comment0 =
+      this.client.ticketCommentCreate(
+        new IcTicketCommentCreation(
+          ticket0.ticketId(),
+          OptionalLong.empty(),
+          "Comment on ticket 0"
+        )
+      );
+
+    final var ex =
+      assertThrows(IcClientException.class, () -> {
+        this.client.ticketCommentCreate(
+          new IcTicketCommentCreation(
+            ticket1.ticketId(),
+            OptionalLong.of(comment0.commentId()),
+            "Comment on ticket 1"
+          )
+        );
+      });
+
+    assertEquals(TICKET_COMMENT_NONEXISTENT, ex.errorCode());
+  }
+
+  /**
+   * It's not possible to specify that a comment was a reply to a nonexistent
+   * comment.
+   *
+   * @throws Exception On errors
+   */
+
+  @Test
+  public void testTicketReplyNonexistentComment()
+    throws Exception
+  {
+    final var user0Id = this.createIdstoreUser("someone");
+    this.icatiro().userInitialSet(user0Id);
+    this.client.login("someone", "12345678", serverAPIBase());
+
+    final var project =
+      this.client.projectCreate(
+        new IcProjectShortName("PROJECT"),
+        new IcProjectTitle("Example project.")
+      );
+
+    final var ticket0 =
+      this.client.ticketCreate(
+        new IcTicketCreation(
+          project.id(),
+          new IcTicketTitle("Title"),
+          "Description."
+        )
+      );
+
+    final var ex =
+      assertThrows(IcClientException.class, () -> {
+        this.client.ticketCommentCreate(
+          new IcTicketCommentCreation(
+            ticket0.ticketId(),
+            OptionalLong.of(239919L),
+            "Comment on ticket 0"
+          )
+        );
+      });
+
+    assertEquals(TICKET_COMMENT_NONEXISTENT, ex.errorCode());
+  }
+
+  /**
+   * It's not possible to create a comment on a nonexistent ticket.
+   *
+   * @throws Exception On errors
+   */
+
+  @Test
+  public void testTicketCommentNonexistentTicket()
+    throws Exception
+  {
+    final var user0Id = this.createIdstoreUser("someone");
+    this.icatiro().userInitialSet(user0Id);
+    this.client.login("someone", "12345678", serverAPIBase());
+
+    final var project =
+      this.client.projectCreate(
+        new IcProjectShortName("PROJECT"),
+        new IcProjectTitle("Example project.")
+      );
+
+    final var ex =
+      assertThrows(IcClientException.class, () -> {
+        this.client.ticketCommentCreate(
+          new IcTicketCommentCreation(
+            new IcTicketID(project.id(), 23L),
+            OptionalLong.empty(),
+            "Comment on ticket 0"
+          )
+        );
+      });
+
+    assertEquals(TICKET_NONEXISTENT, ex.errorCode());
   }
 }

@@ -23,7 +23,11 @@ import com.io7m.icatiro.model.IcPermissionScopedType;
 import com.io7m.icatiro.model.IcProject;
 import com.io7m.icatiro.model.IcProjectShortName;
 import com.io7m.icatiro.model.IcProjectTitle;
+import com.io7m.icatiro.model.IcTicket;
+import com.io7m.icatiro.model.IcTicketComment;
+import com.io7m.icatiro.model.IcTicketCommentCreation;
 import com.io7m.icatiro.model.IcTicketCreation;
+import com.io7m.icatiro.model.IcTicketID;
 import com.io7m.icatiro.model.IcTicketSearch;
 import com.io7m.icatiro.model.IcTicketSummary;
 import com.io7m.icatiro.model.IcUser;
@@ -128,6 +132,22 @@ public final class IcClient implements IcClientType
     throws IcClientException, InterruptedException
   {
     return this.handler.ticketSearchPrevious();
+  }
+
+  @Override
+  public IcTicketComment ticketCommentCreate(
+    final IcTicketCommentCreation create)
+    throws IcClientException, InterruptedException
+  {
+    return this.handler.ticketCommentCreate(create);
+  }
+
+  @Override
+  public IcTicket ticketGet(
+    final IcTicketID id)
+    throws IcClientException, InterruptedException
+  {
+    return this.handler.ticketGet(id);
   }
 
   @Override

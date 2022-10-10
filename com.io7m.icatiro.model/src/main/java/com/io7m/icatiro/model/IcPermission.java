@@ -41,10 +41,16 @@ public enum IcPermission
   TICKET_WRITE(3),
 
   /**
+   * A ticket can be commented on.
+   */
+
+  TICKET_COMMENT(4),
+
+  /**
    * A project can be created.
    */
 
-  PROJECT_CREATE(4);
+  PROJECT_CREATE(5);
 
   private final int value;
 
