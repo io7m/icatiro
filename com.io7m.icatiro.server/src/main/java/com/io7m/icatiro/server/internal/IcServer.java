@@ -41,9 +41,8 @@ import com.io7m.jmulticlose.core.CloseableCollection;
 import com.io7m.jmulticlose.core.CloseableCollectionType;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.SpanKind;
-import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.DefaultSessionCache;
 import org.eclipse.jetty.server.session.DefaultSessionIdManager;
 import org.eclipse.jetty.server.session.NullSessionDataStore;
@@ -53,7 +52,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Objects;
@@ -307,20 +305,11 @@ public final class IcServer implements IcServerType
     sessionHandler.setHandler(servlets);
 
     /*
-     * Set up an MBean container so that the statistics handler can export
-     * statistics to JMX.
+     * Enable gzip.
      */
 
-    final var mbeanContainer =
-      new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-    server.addBean(mbeanContainer);
-
-    /*
-     * Set up a statistics handler that wraps everything.
-     */
-
-    final var statsHandler = new StatisticsHandler();
-    statsHandler.setHandler(sessionHandler);
+    final var gzip = new GzipHandler();
+    gzip.setHandler(sessionHandler);
 
     /*
      * Add a connector listener that adds unique identifiers to all requests.
@@ -332,7 +321,7 @@ public final class IcServer implements IcServerType
 
     server.setErrorHandler(new IcErrorHandler());
     server.setRequestLog(new IcServerRequestLog(services, "view"));
-    server.setHandler(statsHandler);
+    server.setHandler(gzip);
     server.start();
     LOG.info("[{}] view server started", address);
     return server;
@@ -368,11 +357,11 @@ public final class IcServer implements IcServerType
     );
     servlets.addServlet(
       servletHolders.create(IcT1Login.class, IcT1Login::new),
-      "/ticketSearch/1/0/login"
+      "/tickets/1/0/login"
     );
     servlets.addServlet(
       servletHolders.create(IcT1CommandServlet.class, IcT1CommandServlet::new),
-      "/ticketSearch/1/0/command"
+      "/tickets/1/0/command"
     );
 
     servlets.addEventListener(
@@ -398,20 +387,11 @@ public final class IcServer implements IcServerType
     sessionHandler.setHandler(servlets);
 
     /*
-     * Set up an MBean container so that the statistics handler can export
-     * statistics to JMX.
+     * Enable gzip.
      */
 
-    final var mbeanContainer =
-      new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
-    server.addBean(mbeanContainer);
-
-    /*
-     * Set up a statistics handler that wraps everything.
-     */
-
-    final var statsHandler = new StatisticsHandler();
-    statsHandler.setHandler(sessionHandler);
+    final var gzip = new GzipHandler();
+    gzip.setHandler(sessionHandler);
 
     /*
      * Add a connector listener that adds unique identifiers to all requests.
@@ -423,7 +403,7 @@ public final class IcServer implements IcServerType
 
     server.setErrorHandler(new IcErrorHandler());
     server.setRequestLog(new IcServerRequestLog(services, "public"));
-    server.setHandler(statsHandler);
+    server.setHandler(gzip);
     server.start();
     LOG.info("[{}] API server started", address);
     return server;

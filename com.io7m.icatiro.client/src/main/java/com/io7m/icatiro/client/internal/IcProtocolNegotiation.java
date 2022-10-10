@@ -95,9 +95,14 @@ public final class IcProtocolNegotiation
 
     final VProtocols message;
     try {
-      message = protocols.parse(base, response.body());
+      final var body =
+        IcCompression.decompressResponse(response, response.headers());
+
+      message = protocols.parse(base, body);
     } catch (final VProtocolException e) {
       throw new IcClientException(PROTOCOL_ERROR, e);
+    } catch (final IOException e) {
+      throw new IcClientException(IO_ERROR, e);
     }
 
     return message.protocols()
@@ -165,8 +170,7 @@ public final class IcProtocolNegotiation
     LOG.debug("server supports {} protocols", serverProtocols.size());
 
     final var solver =
-      GenProtocolSolver.<IcClientProtocolHandlerFactoryType, IcServerEndpoint>create(
-        locale);
+      GenProtocolSolver.<IcClientProtocolHandlerFactoryType, IcServerEndpoint>create(locale);
 
     final GenProtocolSolved<IcClientProtocolHandlerFactoryType, IcServerEndpoint> solved;
     try {

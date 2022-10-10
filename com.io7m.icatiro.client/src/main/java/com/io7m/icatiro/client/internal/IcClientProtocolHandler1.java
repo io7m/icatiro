@@ -183,7 +183,7 @@ public final class IcClientProtocolHandler1
       }
 
       final var responseMessage =
-        this.messages.parse(response.body());
+        this.messages.parse(IcCompression.decompressResponse(response, responseHeaders));
 
       if (!(responseMessage instanceof IcTResponseType)) {
         throw new IcClientException(

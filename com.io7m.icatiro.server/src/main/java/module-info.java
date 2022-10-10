@@ -45,7 +45,6 @@ module com.io7m.icatiro.server
   requires java.desktop;
   requires java.management;
   requires org.apache.commons.io;
-  requires org.eclipse.jetty.jmx;
   requires org.eclipse.jetty.server;
   requires org.eclipse.jetty.servlet;
 
