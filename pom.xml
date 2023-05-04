@@ -39,34 +39,34 @@
 
   <properties>
     <com.io7m.anethum.version>0.0.2</com.io7m.anethum.version>
-    <com.io7m.cedarbridge.version>0.0.10</com.io7m.cedarbridge.version>
-    <com.io7m.cxbutton.version>0.0.2</com.io7m.cxbutton.version>
+    <com.io7m.cedarbridge.version>0.0.12</com.io7m.cedarbridge.version>
+    <com.io7m.cxbutton.version>0.0.5</com.io7m.cxbutton.version>
     <com.io7m.dixmont.version>0.0.2</com.io7m.dixmont.version>
     <com.io7m.genevan.version>0.0.2</com.io7m.genevan.version>
-    <com.io7m.idstore.version>0.0.2</com.io7m.idstore.version>
+    <com.io7m.idstore.version>0.0.4</com.io7m.idstore.version>
     <com.io7m.jade.version>1.0.2</com.io7m.jade.version>
-    <com.io7m.jbssio.version>1.1.1</com.io7m.jbssio.version>
-    <com.io7m.jqpage.version>0.0.1</com.io7m.jqpage.version>
+    <com.io7m.jbssio.version>2.0.0</com.io7m.jbssio.version>
+    <com.io7m.jqpage.version>0.0.2</com.io7m.jqpage.version>
     <com.io7m.jvindicator.version>0.0.1</com.io7m.jvindicator.version>
     <com.io7m.jxtrand.version>1.1.0</com.io7m.jxtrand.version>
     <com.io7m.trasco.version>0.0.6</com.io7m.trasco.version>
     <com.io7m.verdant.version>0.0.1</com.io7m.verdant.version>
     <io7m.api.previousVersion>0.0.1-SNAPSHOT</io7m.api.previousVersion>
-    <jackson.version>2.13.3</jackson.version>
-    <javafx.version>18.0.1</javafx.version>
-    <jetty.version>11.0.11</jetty.version>
-    <jooq.version>3.17.2</jooq.version>
-    <logback.version>1.4.1</logback.version>
-    <opentelemetry.version>1.18.0</opentelemetry.version>
+    <jackson.version>2.15.0</jackson.version>
+    <javafx.version>20.0.1</javafx.version>
+    <jetty.version>11.0.15</jetty.version>
+    <jooq.version>3.18.3</jooq.version>
+    <logback.version>1.4.7</logback.version>
+    <opentelemetry.version>1.25.0</opentelemetry.version>
     <org.apache.derby.version>10.16.1.1</org.apache.derby.version>
-    <org.jline.version>3.21.0</org.jline.version>
-    <slf4j.version>2.0.1</slf4j.version>
-    <testcontainers.version>1.17.3</testcontainers.version>
+    <org.jline.version>3.23.0</org.jline.version>
+    <slf4j.version>2.0.7</slf4j.version>
+    <testcontainers.version>1.18.0</testcontainers.version>
   </properties>
 
   <licenses>
     <license>
-      <name>ISC License</name>
+      <name>ISC</name>
       <url>https://www.io7m.com/license/isc.txt</url>
     </license>
   </licenses>
@@ -131,12 +131,12 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
-        <version>5.8.2</version>
+        <version>5.9.3</version>
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-engine</artifactId>
-        <version>5.8.2</version>
+        <version>5.9.3</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -156,27 +156,27 @@
       <dependency>
         <groupId>net.jqwik</groupId>
         <artifactId>jqwik-api</artifactId>
-        <version>1.6.5</version>
+        <version>1.7.3</version>
       </dependency>
       <dependency>
         <groupId>net.jqwik</groupId>
         <artifactId>jqwik-engine</artifactId>
-        <version>1.6.5</version>
+        <version>1.7.3</version>
       </dependency>
       <dependency>
         <groupId>biz.aQute.bnd</groupId>
         <artifactId>biz.aQute.bndlib</artifactId>
-        <version>6.2.0</version>
+        <version>6.4.0</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.resource</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
         <artifactId>org.osgi.framework</artifactId>
-        <version>1.8.0</version>
+        <version>1.10.0</version>
       </dependency>
       <dependency>
         <groupId>org.osgi</groupId>
@@ -191,7 +191,7 @@
       <dependency>
         <groupId>org.apache.felix</groupId>
         <artifactId>org.apache.felix.framework</artifactId>
-        <version>7.0.3</version>
+        <version>7.0.5</version>
         <exclusions>
           <exclusion>
             <groupId>org.codehaus.mojo</groupId>
@@ -388,12 +388,12 @@
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>4.4.0</version>
+        <version>5.3.1</version>
       </dependency>
       <dependency>
         <groupId>com.io7m.jlexing</groupId>
         <artifactId>com.io7m.jlexing.core</artifactId>
-        <version>3.0.0</version>
+        <version>3.1.0</version>
       </dependency>
       <dependency>
         <groupId>commons-io</groupId>
@@ -403,7 +403,7 @@
       <dependency>
         <groupId>org.postgresql</groupId>
         <artifactId>postgresql</artifactId>
-        <version>42.4.0</version>
+        <version>42.6.0</version>
       </dependency>
       <dependency>
         <groupId>com.zaxxer</groupId>
@@ -463,7 +463,7 @@
       <dependency>
         <groupId>org.freemarker</groupId>
         <artifactId>freemarker</artifactId>
-        <version>2.3.31</version>
+        <version>2.3.32</version>
       </dependency>
       <dependency>
         <groupId>com.io7m.cedarbridge</groupId>
@@ -525,12 +525,12 @@
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-stdlib</artifactId>
-        <version>1.7.10</version>
+        <version>1.8.21</version>
       </dependency>
       <dependency>
         <groupId>com.sanctionco.jmail</groupId>
         <artifactId>jmail</artifactId>
-        <version>1.4.1</version>
+        <version>1.5.0</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -590,7 +590,7 @@
       <dependency>
         <groupId>com.github.davidmoten</groupId>
         <artifactId>subethasmtp</artifactId>
-        <version>6.0.4</version>
+        <version>6.0.5</version>
       </dependency>
       <dependency>
         <groupId>com.io7m.jqpage</groupId>
