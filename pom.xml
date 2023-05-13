@@ -55,13 +55,13 @@
     <jackson.version>2.15.0</jackson.version>
     <javafx.version>20.0.1</javafx.version>
     <jetty.version>11.0.15</jetty.version>
-    <jooq.version>3.18.3</jooq.version>
+    <jooq.version>3.18.4</jooq.version>
     <logback.version>1.4.7</logback.version>
-    <opentelemetry.version>1.25.0</opentelemetry.version>
+    <opentelemetry.version>1.26.0</opentelemetry.version>
     <org.apache.derby.version>10.16.1.1</org.apache.derby.version>
     <org.jline.version>3.23.0</org.jline.version>
     <slf4j.version>2.0.7</slf4j.version>
-    <testcontainers.version>1.18.0</testcontainers.version>
+    <testcontainers.version>1.18.1</testcontainers.version>
   </properties>
 
   <licenses>
